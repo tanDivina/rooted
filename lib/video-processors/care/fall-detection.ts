@@ -169,8 +169,9 @@ export class FallDetectionProcessor implements VideoProcessor {
       confidence = 0.95
     }
 
-    // Generate bounding box
-    const boundingBoxes: BoundingBox[] = [
+    // Only outline the person once something needs attention; a calm room stays clean
+    const noticing = this.posture === 'fall_detected' || this.posture === 'horizontal_floor'
+    const boundingBoxes: BoundingBox[] = !noticing ? [] : [
       {
         x: Math.max(20, minX),
         y: Math.max(20, minY),
