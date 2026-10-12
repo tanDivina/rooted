@@ -8,8 +8,8 @@ import { VideoProcessor, ProcessorResult } from '../types'
  */
 export class VoiceDistressProcessor implements VideoProcessor {
   id = 'care-voice-distress'
-  name = '🎙️ Voice Distress & SOS Listener'
-  description = 'Listens for emergency keywords ("Help!", "I fell!", "Call for help!")'
+  name = 'Call-for-help listener'
+  description = 'Listens for calls like "Help!", "I fell!" or "Ayuda!"'
   enabled = true
 
   private listening = false
@@ -94,8 +94,8 @@ export class VoiceDistressProcessor implements VideoProcessor {
           type: 'voice_distress',
           severity: 'critical',
           timestamp: now,
-          title: `Voice SOS Triggered: "${matched.toUpperCase()}"`,
-          description: `Ring camera audio detected distress acoustic phrase: "${matched}".`,
+          title: `A call for help: “${matched}”`,
+          description: `Heard “${matched}” through the camera’s microphone.`,
           confidence: 0.99,
           resolved: false,
           escalationLevel: 1,
@@ -115,8 +115,8 @@ export class VoiceDistressProcessor implements VideoProcessor {
         type: 'voice_distress',
         severity: 'critical',
         timestamp: now,
-        title: `Voice SOS Detected: "${phrase}"`,
-        description: 'Acoustic pattern matched vocal distress cry. Resident requesting immediate assistance.',
+        title: `A call for help: “${phrase}”`,
+        description: 'Heard a cry for help through the camera’s microphone.',
         confidence: 0.98,
         resolved: false,
         escalationLevel: 1,

@@ -17,8 +17,8 @@ export interface FallDetectionData {
  */
 export class FallDetectionProcessor implements VideoProcessor {
   id = 'care-fall-detection'
-  name = '🚨 Elderly Fall & Slip Sentinel'
-  description = 'Detects sudden falls, slips, and floor-level immobility in real time'
+  name = 'Fall & slip watch'
+  description = 'Notices sudden falls, slips and stillness on the floor'
   enabled = true
 
   private posture: 'standing' | 'sitting' | 'horizontal_floor' | 'fall_detected' = 'standing'
@@ -55,8 +55,8 @@ export class FallDetectionProcessor implements VideoProcessor {
         type: 'fall_detected',
         severity: 'critical',
         timestamp: Date.now(),
-        title: 'Fall Detected: Living Room',
-        description: 'Resident collapsed to the floor and has remained immobile for > 4 seconds.',
+        title: 'A fall in the living room',
+        description: 'Went down to the floor and hasn’t moved for more than 4 seconds.',
         confidence: 0.96,
         resolved: false,
         escalationLevel: 1,
@@ -140,8 +140,8 @@ export class FallDetectionProcessor implements VideoProcessor {
               type: 'fall_detected',
               severity: 'critical',
               timestamp: now,
-              title: 'Fall Detected: Living Room',
-              description: `Resident fell to floor level (ratio: ${aspectRatio.toFixed(2)}) and remained motionless for ${immobilitySec}s.`,
+              title: 'A fall in the living room',
+              description: `Went down to the floor and hasn’t moved for ${immobilitySec}s (body ratio ${aspectRatio.toFixed(2)}).`,
               confidence: 0.98,
               resolved: false,
               escalationLevel: 1,

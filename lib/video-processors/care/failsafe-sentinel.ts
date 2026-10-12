@@ -11,8 +11,8 @@ import { CareIncident, DeviceTelemetry, EscalationStatus } from '@/lib/types/car
  */
 export class FailSafeSentinelProcessor implements VideoProcessor {
   id = 'care-failsafe-sentinel'
-  name = '🛡️ Redundant Fail-Safe & Dead-Man Switch'
-  description = 'Heartbeat liveness monitor and secondary emergency backup'
+  name = 'Fail-safe check-in'
+  description = 'Regular heartbeat, with a cellular backup if the camera goes quiet'
   enabled = true
 
   private online = true
@@ -96,8 +96,8 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
           type: 'heartbeat_loss',
           severity: 'high',
           timestamp: now,
-          title: '🚨 Fail-Safe Activated: Ring Camera Offline',
-          description: 'Primary camera lost heartbeat connection. Secondary cellular backup circuit armed.',
+          title: 'The camera went quiet',
+          description: 'No heartbeat from the camera. Wi-Fi or power may be down, so alerts now travel over cellular.',
           confidence: 1.0,
           resolved: false,
           escalationLevel: 2,
@@ -159,7 +159,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
   ): Promise<ProcessorResult | null> {
     const now = Date.now()
     this.lastHeartbeat = now
-    this.tickEscalation()
+    // The countdown is driven by a 1s timer in the dashboard, not by frame rate
 
     return {
       id: `sentinel-res-${now}`,

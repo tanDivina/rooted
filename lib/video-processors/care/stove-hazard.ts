@@ -9,8 +9,8 @@ import { VideoProcessor, ProcessorResult, BoundingBox } from '../types'
  */
 export class StoveHazardProcessor implements VideoProcessor {
   id = 'care-stove-hazard'
-  name = '🔥 Kitchen Stove & Fire Sentinel'
-  description = 'Monitors active stove burners and triggers alerts when left unattended'
+  name = 'Stove watch'
+  description = 'Notices a burner left on in an empty kitchen'
   enabled = true
 
   private stoveActive = true
@@ -43,8 +43,8 @@ export class StoveHazardProcessor implements VideoProcessor {
         type: 'stove_unattended',
         severity: 'high',
         timestamp: Date.now(),
-        title: 'Unattended Stove Alert: Kitchen',
-        description: 'Stove burner has been active for over 15 minutes with no human presence detected in the kitchen.',
+        title: 'Stove left on in the kitchen',
+        description: 'A burner has been on for over 15 minutes and nobody is in the kitchen.',
         confidence: 0.94,
         resolved: false,
         escalationLevel: 1,
@@ -95,8 +95,8 @@ export class StoveHazardProcessor implements VideoProcessor {
               type: 'stove_unattended',
               severity: 'high',
               timestamp: now,
-              title: 'Unattended Stove Alert: Kitchen',
-              description: `Burner left on without kitchen presence for ${elapsedUnattendedSec} seconds.`,
+              title: 'Stove left on in the kitchen',
+              description: `A burner has been on for ${elapsedUnattendedSec}s with nobody in the kitchen.`,
               confidence: 0.95,
               resolved: false,
               escalationLevel: 1,

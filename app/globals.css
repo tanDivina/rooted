@@ -2,23 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 226, 232, 240;
-  --background-rgb: 15, 23, 42;
-}
-
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
+  color: #3b2a1e;
+  background: #f3ede0;
+  /* faint paper grain */
+  background-image: radial-gradient(rgba(107, 82, 66, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
 }
 
-/* Scrollbar styling for dark theme */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #1e293b; }
-::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d9cdb6; border-radius: 4px; }
 
 @layer components {
   .card {
-    @apply bg-dash-panel rounded-xl border border-slate-700 p-4;
+    @apply bg-parchment-paper rounded-2xl border border-bark-line p-4 shadow-leaf;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-moss {
+    @apply btn bg-moss text-parchment-paper hover:bg-moss-deep;
+  }
+  .btn-ghost {
+    @apply btn border border-bark-line bg-parchment-paper text-bark hover:bg-parchment-deep;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-bark-mute;
   }
 }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-0.8deg); }
+  50% { transform: rotate(0.8deg); }
+}
+.animate-sway { animation: sway 7s ease-in-out infinite; transform-origin: 50% 85%; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.animate-breathe { animation: breathe 2.8s ease-in-out infinite; }

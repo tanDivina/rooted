@@ -2,34 +2,32 @@
 
 import React, { useState } from 'react'
 import { CareIncident } from '@/lib/types/care'
-import {
-  AlertCircle,
-  Activity,
-  Flame,
-  Mic,
-  WifiOff,
-  CheckCircle2,
-  FileText,
-  Clock,
-  Sparkles,
-  Send,
-} from 'lucide-react'
+import { FallIcon, KettleIcon, VoiceIcon, SignalOffIcon, SproutIcon, CheckIcon, PageIcon, CloseIcon } from './icons'
 
 interface CaregiverTimelineProps {
   incidents: CareIncident[]
   onAcknowledge: (id: string) => void
 }
 
+const KIND: Record<string, { Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Element; tone: string }> = {
+  fall_detected: { Icon: FallIcon, tone: 'text-ember bg-ember-wash' },
+  slip_inactivity: { Icon: FallIcon, tone: 'text-ember bg-ember-wash' },
+  stove_unattended: { Icon: KettleIcon, tone: 'text-honey bg-honey-wash' },
+  voice_distress: { Icon: VoiceIcon, tone: 'text-ember bg-ember-wash' },
+  heartbeat_loss: { Icon: SignalOffIcon, tone: 'text-honey bg-honey-wash' },
+}
+const CALM = { Icon: SproutIcon, tone: 'text-moss bg-moss-wash' }
+
+/** The caregiver log, drawn as growth rings: newest on top, each moment a ring on the trunk. */
 export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelineProps) {
-  const [selectedIncidentForBrief, setSelectedIncidentForBrief] = useState<CareIncident | null>(null)
-  const [briefSummary, setBriefSummary] = useState<string | null>(null)
-  const [generatingBrief, setGeneratingBrief] = useState(false)
+  const [briefFor, setBriefFor] = useState<CareIncident | null>(null)
+  const [brief, setBrief] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleGenerateBrief = async (incident: CareIncident) => {
-    setSelectedIncidentForBrief(incident)
-    setGeneratingBrief(true)
-    setBriefSummary(null)
-
+  const openBrief = async (incident: CareIncident) => {
+    setBriefFor(incident)
+    setLoading(true)
+    setBrief(null)
     try {
       const res = await fetch('/api/care/summary', {
         method: 'POST',
@@ -37,172 +35,114 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
         body: JSON.stringify({ incident }),
       })
       const data = await res.json()
-      setBriefSummary(data.summary || 'Summary unavailable')
+      setBrief(data.summary || 'Summary unavailable')
     } catch {
-      setBriefSummary(
-        `EMERGENCY EMS REPORT:\nResident: Senior Care Subject #104\nEvent: ${incident.title}\nSeverity: ${incident.severity.toUpperCase()}\nTime: ${new Date(incident.timestamp).toLocaleString()}\nDetails: ${incident.description}\nRing Camera Sentinel: Confidence ${Math.round(incident.confidence * 100)}%. Escalation Level ${incident.escalationLevel} executed.`
+      setBrief(
+        `EMERGENCY EMS REPORT\nEvent: ${incident.title}\nSeverity: ${incident.severity.toUpperCase()}\nTime: ${new Date(incident.timestamp).toLocaleString()}\nDetails: ${incident.description}\nConfidence: ${Math.round(incident.confidence * 100)}%`
       )
     } finally {
-      setGeneratingBrief(false)
-    }
-  }
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'fall_detected':
-      case 'slip_inactivity':
-        return <Activity className="w-4 h-4 text-red-400" />
-      case 'stove_unattended':
-        return <Flame className="w-4 h-4 text-orange-400" />
-      case 'voice_distress':
-        return <Mic className="w-4 h-4 text-indigo-400" />
-      case 'heartbeat_loss':
-        return <WifiOff className="w-4 h-4 text-amber-400" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-cyan-400" />
+      setLoading(false)
     }
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-700">
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <span>🛡️ Caregiver Incident Log</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-300 font-mono">
-              {incidents.length} Events
-            </span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time Ring camera audit trail & automated dispatch records
-          </p>
-        </div>
+    <div className="flex-1 overflow-y-auto px-5 pb-5">
+      <div className="pt-1 pb-4">
+        <h2 className="font-serif text-xl font-semibold">Growth rings</h2>
+        <p className="text-[13px] text-bark-mute">Every moment Rooted noticed, newest first.</p>
       </div>
 
-      {/* Incident List */}
-      <div className="space-y-3 flex-1">
+      <ol className="relative">
+        {/* trunk line */}
+        <span className="absolute left-[19px] top-2 bottom-2 w-px bg-bark-line" aria-hidden="true" />
+
         {incidents.map((incident) => {
-          const isCritical = incident.severity === 'critical'
-          const isHigh = incident.severity === 'high'
-
+          const { Icon, tone } = KIND[incident.type] || CALM
+          const urgent = incident.severity === 'critical' || incident.severity === 'high'
           return (
-            <div
-              key={incident.id}
-              className={`p-3.5 rounded-xl border transition ${
-                isCritical
-                  ? 'bg-red-950/30 border-red-800/80 shadow-lg shadow-red-950/20'
-                  : isHigh
-                  ? 'bg-orange-950/20 border-orange-800/60'
-                  : 'bg-slate-800/60 border-slate-700'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3 mb-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
-                    {getIcon(incident.type)}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-white">{incident.title}</h3>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(incident.timestamp).toLocaleTimeString()}</span>
-                      <span>•</span>
-                      <span>Confidence: {(incident.confidence * 100).toFixed(0)}%</span>
-                    </div>
-                  </div>
+            <li key={incident.id} className="relative flex gap-4 pb-4">
+              <span className={`relative z-10 mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-4 ring-parchment ${tone}`}>
+                <Icon className="w-[18px] h-[18px]" />
+              </span>
+
+              <div className={`flex-1 rounded-2xl border bg-parchment-paper p-4 shadow-leaf ${urgent && !incident.resolved ? 'border-ember/40' : 'border-bark-line'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-[15px] font-semibold leading-snug">{incident.title}</h3>
+                  {incident.resolved ? (
+                    incident.escalationLevel === 3 ? (
+                      <span className="shrink-0 rounded-full bg-ember-wash px-2 py-0.5 text-[11px] font-semibold text-ember-deep">
+                        Help sent
+                      </span>
+                    ) : (
+                      <span className="flex shrink-0 items-center gap-1 text-[12px] font-medium text-moss">
+                        <CheckIcon className="w-3.5 h-3.5" />
+                        Settled
+                      </span>
+                    )
+                  ) : (
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${urgent ? 'bg-ember text-parchment-paper' : 'bg-parchment-deep text-bark-soft'}`}>
+                      {incident.severity}
+                    </span>
+                  )}
                 </div>
+                <div className="mt-0.5 text-[12px] text-bark-mute">
+                  {new Date(incident.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ·{' '}
+                  {(incident.confidence * 100).toFixed(0)}% sure
+                </div>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-bark-soft">{incident.description}</p>
 
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                    isCritical
-                      ? 'bg-red-500 text-white'
-                      : isHigh
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-slate-700 text-slate-300'
-                  }`}
-                >
-                  {incident.severity}
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed pl-8 pr-2">
-                {incident.description}
-              </p>
-
-              <div className="mt-3 pl-8 flex items-center justify-between gap-2 pt-2 border-t border-slate-700/50">
-                <button
-                  onClick={() => handleGenerateBrief(incident)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-medium flex items-center gap-1.5 border border-slate-700 transition"
-                >
-                  <Sparkles className="w-3 h-3 text-cyan-400" />
-                  Paramedic EMS Summary
-                </button>
-
-                {!incident.resolved ? (
-                  <button
-                    onClick={() => onAcknowledge(incident.id)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-[11px] font-medium flex items-center gap-1 border border-emerald-800 transition"
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    Mark Resolved
+                <div className="mt-3 flex items-center gap-2">
+                  <button onClick={() => openBrief(incident)} className="btn-ghost !px-3 !py-1.5 !text-[12.5px]">
+                    <PageIcon className="w-3.5 h-3.5" />
+                    Paramedic brief
                   </button>
-                ) : (
-                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Resolved
-                  </span>
-                )}
+                  {!incident.resolved && (
+                    <button onClick={() => onAcknowledge(incident.id)} className="btn-moss !px-3 !py-1.5 !text-[12.5px]">
+                      <CheckIcon className="w-3.5 h-3.5" />
+                      Mark settled
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            </li>
           )
         })}
 
         {incidents.length === 0 && (
-          <div className="text-center py-12 text-slate-500 text-xs">
-            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-500/50" />
-            No incidents detected. Resident is safe and mobility patterns are normal.
-          </div>
+          <li className="py-12 text-center text-sm text-bark-mute">
+            <SproutIcon className="mx-auto mb-2 h-8 w-8 text-moss-soft" />
+            A quiet day. Nothing to report.
+          </li>
         )}
-      </div>
+      </ol>
 
-      {/* EMS Brief Modal */}
-      {selectedIncidentForBrief && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-white shadow-2xl flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-                <FileText className="w-5 h-5" />
-                Automated Clinical Dispatch Brief (AWS Bedrock / Ring AVA)
+      {briefFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bark/40 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-xl p-7 flex flex-col gap-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="eyebrow">For first responders</div>
+                <h2 className="font-serif text-2xl font-semibold mt-1">Paramedic brief</h2>
               </div>
-              <button
-                onClick={() => setSelectedIncidentForBrief(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
+              <button onClick={() => setBriefFor(null)} className="text-bark-mute hover:text-bark" aria-label="Close">
+                <CloseIcon className="w-5 h-5" />
               </button>
             </div>
 
-            {generatingBrief ? (
-              <div className="py-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-                <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                Synthesizing multi-modal incident brief for emergency responders...
+            {loading ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-sm text-bark-mute">
+                <span className="h-6 w-6 animate-spin rounded-full border-2 border-moss border-t-transparent" />
+                Writing the brief…
               </div>
             ) : (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">
-                {briefSummary}
-              </div>
+              <pre className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-bark-line bg-parchment p-4 font-mono text-[12px] leading-relaxed text-bark">
+                {brief}
+              </pre>
             )}
 
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-[11px] text-slate-500">
-                Ready to transmit to local first responders via CAD / Webhook
-              </span>
-              <button
-                onClick={() => setSelectedIncidentForBrief(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold"
-              >
-                Dismiss
-              </button>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-bark-mute">Ready to send to dispatch by webhook</span>
+              <button onClick={() => setBriefFor(null)} className="btn-ghost">Close</button>
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { CareIncident, EscalationStatus } from '@/lib/types/care'
-import { AlertTriangle, ShieldAlert, CheckCircle, PhoneCall, Volume2, Bell } from 'lucide-react'
+import { ChimeIcon, FamilyIcon, HelpIcon, CheckIcon, PhoneIcon, AlertIcon } from './icons'
 
 interface CareIncidentModalProps {
   incident: CareIncident | null
@@ -11,132 +11,141 @@ interface CareIncidentModalProps {
   onImmediateDispatch: () => void
 }
 
-export function CareIncidentModal({
-  incident,
-  escalation,
-  onCancel,
-  onImmediateDispatch,
-}: CareIncidentModalProps) {
-  const [soundPlayed, setSoundPlayed] = useState(false)
+const STEPS = [
+  { level: 1, Icon: ChimeIcon, title: 'At home', body: 'A gentle chime and a voice check through the camera' },
+  { level: 2, Icon: FamilyIcon, title: 'Family', body: 'Text and call to the caregiver, over cellular if needed' },
+  { level: 3, Icon: HelpIcon, title: 'Emergency services', body: 'Dispatch with a clinical brief for paramedics' },
+] as const
 
+export function CareIncidentModal({ incident, escalation, onCancel, onImmediateDispatch }: CareIncidentModalProps) {
+  const chimedFor = useRef<string | null>(null)
+
+  // Soft two-note chime (falling fifth) once per incident
   useEffect(() => {
-    if (incident && escalation.active && !soundPlayed) {
-      // Play brief synthesized alarm chime via Web Audio API
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
-        const osc = audioCtx.createOscillator()
-        const gain = audioCtx.createGain()
+    if (!incident || !escalation.active || chimedFor.current === incident.id) return
+    chimedFor.current = incident.id
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      ;[659.25, 440].forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        const t = ctx.currentTime + i * 0.35
         osc.type = 'sine'
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime) // A5 note
-        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5)
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5)
-        osc.connect(gain)
-        gain.connect(audioCtx.destination)
-        osc.start()
-        osc.stop(audioCtx.currentTime + 0.5)
-        setSoundPlayed(true)
-      } catch {
-        // Audio context may require initial user gesture
-      }
+        osc.frequency.setValueAtTime(freq, t)
+        gain.gain.setValueAtTime(0.0001, t)
+        gain.gain.exponentialRampToValueAtTime(0.18, t + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.9)
+        osc.connect(gain).connect(ctx.destination)
+        osc.start(t)
+        osc.stop(t + 1)
+      })
+    } catch {
+      // Audio may need a user gesture first
     }
-  }, [incident, escalation.active, soundPlayed])
+  }, [incident, escalation.active])
 
   if (!incident || !escalation.active) return null
 
-  const pct = Math.max(0, Math.min(100, (escalation.secondsRemaining / escalation.totalSeconds) * 100))
+  const remaining = escalation.secondsRemaining
+  const frac = Math.max(0, Math.min(1, remaining / escalation.totalSeconds))
+  const dispatched = remaining <= 0
+  const R = 34
+  const C = 2 * Math.PI * R
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-lg w-full p-6 shadow-2xl shadow-red-500/20 text-white flex flex-col gap-5">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-red-500/20 text-red-400 rounded-xl animate-pulse">
-              <ShieldAlert className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 text-xs font-bold uppercase tracking-wider bg-red-500 text-white rounded">
-                  Critical Alert
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bark/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-parchment-paper shadow-2xl ring-1 ring-ember/40">
+        {/* Header band */}
+        <div className="bg-ember px-7 py-5 text-parchment-paper">
+          <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] opacity-90">
+            <AlertIcon className="w-4 h-4" />
+            Something’s not right
+          </div>
+          <h2 className="mt-1.5 font-serif text-[28px] font-semibold leading-tight">{incident.title}</h2>
+        </div>
+
+        <div className="flex flex-col gap-5 p-7">
+          <div className="flex items-center gap-6">
+            {/* Countdown ring */}
+            <div className="relative shrink-0">
+              <svg width="96" height="96" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r={R} fill="none" stroke="#E9E0CC" strokeWidth="6" />
+                <circle
+                  cx="40"
+                  cy="40"
+                  r={R}
+                  fill="none"
+                  stroke="#A8432B"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={C}
+                  strokeDashoffset={C * (1 - frac)}
+                  transform="rotate(-90 40 40)"
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="font-serif text-2xl font-semibold text-ember-deep leading-none">
+                  {dispatched ? '0' : remaining}
                 </span>
-                <span className="text-xs text-slate-400">Ring Guardian Sentinel</span>
+                <span className="text-[10px] uppercase tracking-wider text-bark-mute mt-0.5">sec</span>
               </div>
-              <h2 className="text-xl font-bold text-white mt-0.5">{incident.title}</h2>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-[15px] leading-relaxed text-bark">{incident.description}</p>
+              <p className="text-[13px] text-bark-mute">
+                {dispatched
+                  ? 'No answer came. Help has been sent.'
+                  : 'If no one answers, Rooted reaches further out.'}{' '}
+                Confidence {(incident.confidence * 100).toFixed(0)}% · {new Date(incident.timestamp).toLocaleTimeString()}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Incident Details */}
-        <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/60 flex flex-col gap-2">
-          <p className="text-sm text-slate-300 leading-relaxed">{incident.description}</p>
-          <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-700/40">
-            <span>Detection Confidence: <strong className="text-red-400 font-mono">{(incident.confidence * 100).toFixed(0)}%</strong></span>
-            <span>Triggered: <strong className="text-slate-300 font-mono">{new Date(incident.timestamp).toLocaleTimeString()}</strong></span>
+          {/* Reaching-out ladder */}
+          <ol className="grid grid-cols-3 gap-2.5">
+            {STEPS.map(({ level, Icon, title, body }) => {
+              const reached = escalation.level >= level
+              const current = escalation.level === level
+              return (
+                <li
+                  key={level}
+                  className={`rounded-2xl border p-3.5 transition ${
+                    current
+                      ? 'border-ember bg-ember-wash text-ember-deep'
+                      : reached
+                      ? 'border-ember/30 bg-ember-wash/50 text-ember-deep/80'
+                      : 'border-bark-line bg-parchment text-bark-mute'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider">Step {level}</span>
+                  </div>
+                  <div className={`mt-1.5 text-sm font-semibold ${reached ? '' : 'text-bark-soft'}`}>{title}</div>
+                  <div className="mt-0.5 text-[12px] leading-snug opacity-90">{body}</div>
+                </li>
+              )
+            })}
+          </ol>
+
+          <div className="flex flex-col gap-2.5 sm:flex-row">
+            <button
+              onClick={onCancel}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-moss py-4 text-base font-semibold text-parchment-paper transition hover:bg-moss-deep active:scale-[0.98]"
+            >
+              <CheckIcon className="w-5 h-5" />
+              I’m okay
+            </button>
+            <button
+              onClick={onImmediateDispatch}
+              className="flex items-center justify-center gap-2 rounded-2xl border-2 border-ember px-6 py-4 text-base font-semibold text-ember-deep transition hover:bg-ember-wash active:scale-[0.98]"
+            >
+              <PhoneIcon className="w-5 h-5" />
+              Send help now
+            </button>
           </div>
-        </div>
-
-        {/* Dead-Man's Escalation Countdown */}
-        <div className="bg-gradient-to-r from-red-950/40 to-slate-900 rounded-xl p-4 border border-red-900/60 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-              <span className="text-xs font-semibold uppercase text-red-300 tracking-wide">
-                Fail-Safe Dead-Man Countdown
-              </span>
-            </div>
-            <span className="text-2xl font-black font-mono text-red-400">
-              {escalation.secondsRemaining}s
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-            <div
-              className="bg-red-500 h-full transition-all duration-1000 ease-linear rounded-full"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-
-          {/* Escalation Stage Matrix */}
-          <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-            <div className={`p-2 rounded-lg border transition ${escalation.level === 1 ? 'bg-amber-950/40 border-amber-500 text-amber-200' : 'bg-slate-800/40 border-slate-800 text-slate-500'}`}>
-              <Volume2 className="w-4 h-4 mx-auto mb-1 opacity-80" />
-              <div className="font-semibold text-[11px]">Level 1</div>
-              <div className="text-[10px]">In-Home Chime</div>
-            </div>
-            <div className={`p-2 rounded-lg border transition ${escalation.level === 2 ? 'bg-orange-950/40 border-orange-500 text-orange-200' : 'bg-slate-800/40 border-slate-800 text-slate-500'}`}>
-              <Bell className="w-4 h-4 mx-auto mb-1 opacity-80" />
-              <div className="font-semibold text-[11px]">Level 2</div>
-              <div className="text-[10px]">Caregiver SMS</div>
-            </div>
-            <div className={`p-2 rounded-lg border transition ${escalation.level === 3 ? 'bg-red-950/60 border-red-500 text-red-200 animate-pulse' : 'bg-slate-800/40 border-slate-800 text-slate-500'}`}>
-              <PhoneCall className="w-4 h-4 mx-auto mb-1 opacity-80" />
-              <div className="font-semibold text-[11px]">Level 3</div>
-              <div className="text-[10px]">911 Dispatch</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 transition active:scale-95"
-          >
-            <CheckCircle className="w-5 h-5" />
-            I'M OKAY — CANCEL ALARM
-          </button>
-          <button
-            onClick={onImmediateDispatch}
-            className="py-3 px-4 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-sm flex items-center justify-center gap-2 border border-red-500 transition active:scale-95"
-          >
-            <PhoneCall className="w-4 h-4" />
-            DISPATCH NOW
-          </button>
         </div>
       </div>
     </div>

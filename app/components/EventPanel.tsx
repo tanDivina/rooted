@@ -33,28 +33,32 @@ export function EventPanel({ events, webhookUrl }: EventPanelProps) {
 
   return (
     <>
+      <div className="px-5 pt-1 pb-3">
+        <h2 className="font-serif text-xl font-semibold">Signals</h2>
+        <p className="text-[13px] text-bark-mute">Raw Ring webhook events as they arrive.</p>
+      </div>
       {/* Filters */}
-      <div className="p-3 border-b border-slate-700 flex gap-2">
+      <div className="px-5 pb-3 flex items-center gap-2">
         {(['all', 'person_detected', 'motion_detected'] as FilterType[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`text-xs px-3 py-1 rounded-full ${filter === f ? 'bg-dash-cyan text-black font-medium' : 'bg-dash-card text-slate-400 hover:bg-slate-600'}`}
+            className={`text-[12.5px] px-3 py-1 rounded-full ${filter === f ? 'bg-moss text-parchment-paper font-medium' : 'bg-parchment-deep text-bark-soft hover:bg-bark-line'}`}
           >
             {f === 'all' ? 'All' : f === 'person_detected' ? 'Person' : 'Motion'}
           </button>
         ))}
-        <span className="ml-auto text-xs text-slate-500">
+        <span className="ml-auto text-xs text-bark-mute">
           {filtered.length === totalCount ? totalCount : `${filtered.length}/${totalCount}`} events
         </span>
       </div>
 
       {/* Event list */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-2">
         {filtered.length === 0 ? (
-          <p className="text-center text-slate-500 mt-8 text-sm">
-            Waiting for detection events...<br />
-            <span className="text-xs">POST events to {webhookUrl}</span>
+          <p className="text-center text-bark-mute mt-8 text-sm">
+            Listening for Ring events…<br />
+            <span className="text-xs font-mono">POST to {webhookUrl}</span>
           </p>
         ) : (
           filtered.map((event) => (

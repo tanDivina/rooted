@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const ZONES: Record<string, string> = {
+  fall_detected: 'Living room',
+  slip_inactivity: 'Living room',
+  stove_unattended: 'Kitchen',
+  voice_distress: 'Living room (camera audio)',
+  heartbeat_loss: 'Whole home (camera offline)',
+  routine_inactivity: 'Bedroom',
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { incident } = await req.json()
@@ -16,7 +25,7 @@ export async function POST(req: NextRequest) {
     const summary = `
 =====================================================
 EMERGENCY FIRST RESPONDER DISPATCH BRIEF
-Source: RingCare Guardian AI (Amazon Vision API / Bedrock)
+Source: Rooted (Ring camera incident record)
 Status: ESCALATION LEVEL ${incident.escalationLevel} VERIFIED
 =====================================================
 
@@ -28,8 +37,8 @@ Status: ESCALATION LEVEL ${incident.escalationLevel} VERIFIED
 
 2. RESIDENT PROFILE & SITE CONTEXT:
    • Property: Residence #402 (Private Residence)
-   • Monitored Zone: ${incident.title.split(':')[1]?.trim() || 'Living Room / Kitchen Zone'}
-   • Hardware Sentinel: Ring Cam Sentinel (Model AVA-1, Battery 94%, Signal -52dBm)
+   • Monitored Zone: ${ZONES[incident.type] || 'Home'}
+   • Hardware Sentinel: Ring camera (AVA-1, Battery 94%, Signal -52dBm)
    • Primary Protocol: Aging-In-Place Independent Living
 
 3. MULTI-MODAL EVENT TELEMETRY:
@@ -45,7 +54,7 @@ Status: ESCALATION LEVEL ${incident.escalationLevel} VERIFIED
 5. RECOMMENDED RESPONDER ACTION:
    • Check patient for hip fracture, head trauma, and consciousness level.
    • Verify kitchen appliances and heat sources if stove hazard is flagged.
-   • Primary contact phone: 1-800-RING-CARE-DISPATCH
+   • Primary contact: caregiver on file
 =====================================================
 `.trim()
 

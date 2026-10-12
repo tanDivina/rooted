@@ -1,59 +1,62 @@
 'use client'
 
 import React from 'react'
-import { Shield, Radio, HeartPulse } from 'lucide-react'
+import Link from 'next/link'
+import { TreeMark, LeafIcon } from './icons'
 
 interface HeaderProps {
   connected: boolean
   enabledCount: number
   hasActiveAlert?: boolean
+  alertTitle?: string
 }
 
-export function Header({ connected, enabledCount, hasActiveAlert }: HeaderProps) {
+export function Header({ connected, enabledCount, hasActiveAlert, alertTitle }: HeaderProps) {
   return (
-    <header className="bg-slate-900 border-b border-slate-800 px-5 py-3 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-cyan-900/30">
-          <Shield className="w-5 h-5 text-white" />
-        </div>
+    <header className="px-6 pt-5 pb-4 flex items-center justify-between gap-6 shrink-0">
+      <div className="flex items-center gap-3.5">
+        <TreeMark className="w-12 h-12 animate-sway" />
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-extrabold text-white tracking-tight">
-              RingCare <span className="text-cyan-400">Guardian</span>
+          <div className="flex items-baseline gap-3">
+            <h1 className="font-serif text-[30px] leading-none font-semibold tracking-tight text-bark">
+              Rooted
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
-              Amazon Ring Hackathon
-            </span>
+            <span className="font-serif italic text-moss text-lg leading-none">stay rooted</span>
           </div>
-          <p className="text-[11px] text-slate-400">
-            Autonomous Aging-in-Place Video Sentinel & Redundant Fail-Safe Backup
+          <p className="text-[13px] text-bark-mute mt-1">
+            You can’t transplant an old tree. So we bring the care to its roots.
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         {hasActiveAlert ? (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 border border-red-500 text-red-200 text-xs font-bold animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            Active Emergency Triggered
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-ember text-parchment-paper text-sm font-semibold shadow-leaf">
+            <span className="w-2 h-2 rounded-full bg-parchment-paper animate-breathe" />
+            Reaching out{alertTitle ? `: ${alertTitle}` : ''}
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            System Guarding
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-moss-wash text-moss-deep text-sm font-medium">
+            <span className="w-2 h-2 rounded-full bg-moss animate-breathe" />
+            All’s well at home
           </div>
         )}
 
-        <div className="hidden md:flex items-center gap-2 text-xs">
-          <span className={`px-2.5 py-1 rounded-full border ${connected ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-            {connected ? '● Ring Stream Ready' : '○ Standby'}
+        <div className="hidden lg:flex items-center gap-2 text-[13px]">
+          <span className="px-3 py-2 rounded-full border border-bark-line bg-parchment-paper text-bark-soft">
+            {connected ? 'Camera live' : 'Camera resting'}
           </span>
           {enabledCount > 0 && (
-            <span className="px-2.5 py-1 rounded-full bg-indigo-950/60 border border-indigo-800 text-indigo-300">
-              {enabledCount} AI Sentinels Active
+            <span className="px-3 py-2 rounded-full border border-bark-line bg-parchment-paper text-bark-soft">
+              {enabledCount} roots watching
             </span>
           )}
         </div>
+
+        <Link href="/why" className="btn-ghost">
+          <LeafIcon className="w-4 h-4 text-moss" />
+          Why stay rooted
+        </Link>
       </div>
     </header>
   )

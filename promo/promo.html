@@ -1,0 +1,238 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>RingCare Promo</title>
+<style>
+:root{--bg:#020617;--panel:#0f172a;--line:#1e293b;--cyan:#22d3ee;--cyan2:#06b6d4;--red:#ef4444;--amber:#f59e0b;--green:#22c55e;--indigo:#818cf8;--orange:#fb923c;--txt:#f1f5f9;--mute:#94a3b8}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--txt);font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+.scene{position:absolute;inset:0;opacity:0}
+.abs{position:absolute}
+#bgglow{position:absolute;inset:-200px;background:radial-gradient(900px 600px at var(--gx,50%) var(--gy,50%),rgba(34,211,238,.13),transparent 70%)}
+#grid{position:absolute;inset:0;background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(circle at 50% 50%,#000 30%,transparent 80%)}
+.big{font-size:84px;font-weight:700;letter-spacing:-2px;line-height:1.05}
+.mid{font-size:52px;font-weight:600;letter-spacing:-1px;line-height:1.15}
+.small{font-size:30px;color:var(--mute);line-height:1.4}
+.c{color:var(--cyan)}
+.center{left:0;right:0;text-align:center}
+.shot{border-radius:22px;box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 0 1px rgba(148,163,184,.15);overflow:hidden;background:#000}
+.shot img{display:block;width:100%;height:100%;object-fit:cover}
+.tag{display:inline-block;font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:8px 16px;border-radius:10px}
+.word{display:inline-block}
+.pill{display:inline-flex;align-items:center;gap:14px;font-size:30px;font-weight:600;padding:18px 30px;border-radius:18px;background:rgba(15,23,42,.9);border:1px solid #334155}
+.level{width:380px;height:300px;border-radius:26px;border:2px solid #334155;background:rgba(15,23,42,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+.level .n{font-size:22px;letter-spacing:3px;font-weight:700;color:var(--mute)}
+.level .t{font-size:38px;font-weight:700}
+.level .d{font-size:22px;color:var(--mute)}
+.phone{width:400px;height:800px;border-radius:60px;background:#0b1220;border:10px solid #1f2937;box-shadow:0 40px 100px rgba(0,0,0,.7);padding:70px 22px 22px}
+.bubble{background:#1f2937;border-radius:26px;padding:22px 24px;font-size:24px;line-height:1.4}
+pre{font-family:"SF Mono",Menlo,monospace;font-size:21px;line-height:1.55;color:#a5f3fc;white-space:pre}
+</style></head>
+<body>
+<div id="bgglow"></div><div id="grid"></div>
+
+<!-- S1 hook -->
+<div class="scene" id="s1">
+  <div class="abs center big" id="s1a" style="top:380px">1 in 4 adults over 65<br>falls every year.</div>
+  <div class="abs center small" id="s1src" style="top:600px;font-size:22px">Source: CDC</div>
+  <div class="abs center mid" id="s1b" style="top:470px;color:var(--mute)">And the panic pendant?<br><span style="color:var(--txt)">Still on the nightstand.</span></div>
+</div>
+
+<!-- S2 logo -->
+<div class="scene" id="s2">
+  <div class="abs center mid" id="s2q" style="top:420px">What if the camera already in their home<br>could <span class="c">watch over them</span>?</div>
+  <div class="abs" id="s2logo" style="left:0;right:0;top:330px;display:flex;flex-direction:column;align-items:center;gap:34px">
+    <svg id="shield" width="200" height="200" viewBox="0 0 100 100">
+      <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#0e7490"/></linearGradient></defs>
+      <rect x="4" y="4" width="92" height="92" rx="24" fill="url(#g1)"/>
+      <path id="shieldpath" d="M50 22 L72 30 V50 C72 64 62 74 50 79 C38 74 28 64 28 50 V30 Z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round" stroke-dasharray="200" stroke-dashoffset="200"/>
+      <path id="heart" d="M50 61 C40 54 38 49 41 45 C44 41 48 43 50 46 C52 43 56 41 59 45 C62 49 60 54 50 61 Z" fill="#fff" opacity="0"/>
+    </svg>
+    <div style="font-size:110px;font-weight:800;letter-spacing:-3px">RingCare <span class="c">Guardian</span></div>
+    <div class="small" id="s2tag" style="font-size:34px">Autonomous aging-in-place sentinel for Ring cameras</div>
+  </div>
+</div>
+
+<!-- S3 dashboard -->
+<div class="scene" id="s3">
+  <div class="abs center mid" id="s3t" style="top:80px">Any Ring camera becomes a <span class="c">caretaking sentinel</span>.</div>
+  <div class="abs shot" id="s3shot" style="left:260px;top:220px;width:1400px;height:788px"><img src="shots/idle.png"></div>
+</div>
+
+<!-- S4 detectors (4 sub-scenes) -->
+<div class="scene" id="s4">
+  <div class="abs" id="dtext" style="left:130px;top:300px;width:640px"></div>
+  <div class="abs shot" id="dshot" style="left:820px;top:170px;width:1000px;height:740px"><img id="dimg" src="shots/fall.png" style="object-fit:cover;object-position:50% 50%;transform-origin:50% 45%"></div>
+  <div class="abs" id="dots" style="left:130px;top:880px;display:flex;gap:14px"></div>
+</div>
+
+<!-- S5 escalation -->
+<div class="scene" id="s5">
+  <div class="abs center mid" id="s5t" style="top:90px">No “I’m okay”? <span style="color:var(--red)">Help is already on the way.</span></div>
+  <div class="abs" style="left:0;right:0;top:250px;display:flex;justify-content:center;gap:40px" id="levels">
+    <div class="level" id="L1"><div class="n">LEVEL 1</div>
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 26h10l14-12v36L20 38H10z"/><path d="M42 24c4 4 4 12 0 16M48 18c8 8 8 20 0 28"/></svg>
+      <div class="t">In-home chime</div><div class="d">Two-way voice: “Are you okay?”</div></div>
+    <div class="level" id="L2"><div class="n">LEVEL 2</div>
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="6" width="28" height="52" rx="6"/><path d="M28 50h8"/><path d="M24 20h16M24 28h10"/></svg>
+      <div class="t">Caregiver alert</div><div class="d">SMS + call over cellular</div></div>
+    <div class="level" id="L3"><div class="n">LEVEL 3</div>
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 8v14M32 42v14M8 32h14M42 32h14"/><circle cx="32" cy="32" r="8"/></svg>
+      <div class="t">911 dispatch</div><div class="d">Neighbor + emergency services</div></div>
+  </div>
+  <div class="abs" id="cdwrap" style="left:0;right:0;top:640px;display:flex;justify-content:center;align-items:center;gap:60px">
+    <svg width="250" height="250" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#1e293b" stroke-width="8"/>
+      <circle id="cdring" cx="60" cy="60" r="52" fill="none" stroke="#ef4444" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+      <text id="cdnum" x="60" y="68" text-anchor="middle" fill="#fff" font-size="30" font-weight="700" style="font-family:-apple-system,Helvetica Neue,sans-serif">45s</text>
+    </svg>
+    <div style="font-size:30px;color:var(--mute);line-height:1.5;width:560px">Fail-safe <b style="color:var(--txt)">dead-man countdown</b>.<br>One spoken word cancels it.<br>Silence escalates it.</div>
+  </div>
+  <div class="abs phone" id="phone" style="left:1470px;top:220px">
+    <div style="text-align:center;font-size:20px;color:var(--mute);margin-bottom:26px">RingCare · now</div>
+    <div class="bubble" id="sms"><b style="color:#fca5a5">Fall detected — Living Room.</b><br>Mom hasn’t responded for 45s. Live camera and dispatch brief attached.</div>
+    <div style="display:flex;gap:14px;margin-top:24px" id="smsbtn">
+      <div style="flex:1;text-align:center;padding:18px;border-radius:18px;background:#16a34a;font-size:22px;font-weight:700">Call Mom</div>
+      <div style="flex:1;text-align:center;padding:18px;border-radius:18px;background:#dc2626;font-size:22px;font-weight:700">Call 911</div>
+    </div>
+  </div>
+</div>
+
+<!-- S6 EMS brief -->
+<div class="scene" id="s6">
+  <div class="abs" style="left:130px;top:330px;width:620px">
+    <div class="tag" style="background:rgba(34,211,238,.12);color:var(--cyan)">EMS dispatch brief</div>
+    <div class="mid" style="margin-top:30px">Paramedics arrive with a <span class="c">clinical brief</span>, not a guess.</div>
+    <div class="small" style="margin-top:24px">Synthesized automatically with AWS Bedrock and sent via SNS.</div>
+  </div>
+  <div class="abs" style="left:840px;top:150px;width:960px;height:780px;border-radius:24px;background:#0b1220;border:1px solid #1e293b;box-shadow:0 40px 120px rgba(0,0,0,.6);overflow:hidden">
+    <div style="height:56px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:10px;padding:0 22px">
+      <span style="width:14px;height:14px;border-radius:7px;background:#ef4444"></span><span style="width:14px;height:14px;border-radius:7px;background:#f59e0b"></span><span style="width:14px;height:14px;border-radius:7px;background:#22c55e"></span>
+      <span style="margin-left:18px;font-size:18px;color:var(--mute)">dispatch-brief.txt</span></div>
+    <pre id="brief" style="padding:26px 30px"></pre>
+  </div>
+</div>
+
+<!-- S7 stack -->
+<div class="scene" id="s7">
+  <div class="abs center mid" style="top:290px">Built on the <span class="c">Ring Partner API</span>.</div>
+  <div class="abs" id="stack" style="left:0;right:0;top:450px;display:flex;justify-content:center;flex-wrap:wrap;gap:22px;padding:0 200px"></div>
+</div>
+
+<!-- S8 outro -->
+<div class="scene" id="s8">
+  <div class="abs" style="left:0;right:0;top:290px;display:flex;flex-direction:column;align-items:center;gap:30px">
+    <svg width="150" height="150" viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="24" fill="url(#g1)"/><path d="M50 22 L72 30 V50 C72 64 62 74 50 79 C38 74 28 64 28 50 V30 Z" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/><path d="M50 61 C40 54 38 49 41 45 C44 41 48 43 50 46 C52 43 56 41 59 45 C62 49 60 54 50 61 Z" fill="#fff"/></svg>
+    <div style="font-size:96px;font-weight:800;letter-spacing:-3px">RingCare <span class="c">Guardian</span></div>
+    <div id="s8line" style="font-size:46px;font-weight:600">Aging in place. <span class="c">Never alone.</span></div>
+    <div id="s8meta" style="font-size:24px;color:var(--mute);margin-top:30px;letter-spacing:.5px">Amazon Ring Hackathon 2026 · Caretaking &amp; Accessibility · Open source (MIT)</div>
+    <div id="s8url" style="font-size:24px;color:var(--cyan);font-family:'SF Mono',Menlo,monospace">github.com/dorienvandenabbeele/ringcare-guardian</div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const eo=x=>1-Math.pow(1-x,3);              // ease-out cubic
+const eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+// fade window: in over `f` sec starting a, out over f sec ending b
+const win=(t,a,b,f=.5)=>Math.min(seg(t,a,a+f),1-seg(t,b-f,b));
+function show(el,o,dy=0,sc=1){el.style.opacity=o;el.style.transform=`translateY(${dy}px) scale(${sc})`}
+function rise(el,t,a,dur=.7,dist=40){const p=eo(seg(t,a,a+dur));el.style.opacity=p;el.style.transform=`translateY(${(1-p)*dist}px)`}
+
+const SCENES={s1:[0,5.2],s2:[5.2,11],s3:[11,16],s4:[16,33],s5:[33,42],s6:[42,47.5],s7:[47.5,51.5],s8:[51.5,58]};
+const DUR=58;
+
+const DET=[
+ {img:'shots/fall.png',color:'#ef4444',tag:'Fall & slip',title:'Sees a fall in seconds.',body:'Pose geometry, centroid velocity and floor-level stillness, analysed live on the Ring stream.'},
+ {img:'shots/stove.png',color:'#fb923c',tag:'Stove hazard',title:'Burner on. Kitchen empty.',body:'Watches the cooking zone. Gone for 10+ minutes? A graduated alarm kicks in.'},
+ {img:'shots/voice.png',color:'#818cf8',tag:'Voice SOS',title:'Hears “Help me!”',body:'Recognises distress cries, in English or Spanish, through the camera’s two-way audio.'},
+ {img:'shots/offline.png',color:'#f59e0b',tag:'Network cut',title:'Wi-Fi down? Still guarding.',body:'A cloud dead-man’s switch notices the missing heartbeat and escalates over cellular.'},
+];
+$('dots').innerHTML=DET.map((d,i)=>`<div id="dot${i}" style="height:8px;width:60px;border-radius:4px;background:#334155"></div>`).join('');
+const STACK=['Ring Partner API (AVA)','WebRTC · WHEP','MediaPipe Pose','Next.js 15','AWS Bedrock','AWS SNS'];
+$('stack').innerHTML=STACK.map((s,i)=>`<div class="pill" id="st${i}"><span style="width:12px;height:12px;border-radius:6px;background:var(--cyan)"></span>${s}</div>`).join('');
+const BRIEF=`EMERGENCY FIRST RESPONDER DISPATCH BRIEF
+Source: RingCare Guardian AI (Bedrock)
+Status: ESCALATION LEVEL 3 VERIFIED
+------------------------------------------------
+1. INCIDENT
+   • Event Type:  FALL
+   • Severity:    CRITICAL
+   • CV Confidence: 96%
+2. SITE
+   • Monitored Zone: Living Room
+   • Sentinel: Ring Cam · Battery 94% · -52 dBm
+3. TELEMETRY
+   • Resident collapsed to the floor and has
+     remained immobile for > 4 seconds.
+   • No cancellation via two-way audio.
+4. RECOMMENDED ACTION
+   • Check for hip fracture, head trauma,
+     and level of consciousness.`;
+
+let curDet=-1;
+function render(t){
+  for(const [id,[a,b]] of Object.entries(SCENES)){
+    const first=id==='s1', last=id==='s8';
+    $(id).style.opacity=clamp(Math.min(first?1:seg(t,a,a+.45),last?1:1-seg(t,b-.45,b)));
+  }
+  // slow drifting glow
+  document.body.style.setProperty('--gx',(50+18*Math.sin(t*.25))+'%');
+  document.body.style.setProperty('--gy',(45+10*Math.cos(t*.2))+'%');
+  $('bgglow').style.opacity=t>51.5?1:.9;
+
+  // S1
+  {const a=win(t,.3,2.9,.5);show($('s1a'),a,(1-eo(seg(t,.3,1.1)))*30);$('s1src').style.opacity=a*.7;
+   show($('s1b'),win(t,3.0,5.2,.5),(1-eo(seg(t,3,3.7)))*30);}
+  // S2
+  {show($('s2q'),win(t,5.3,7.6,.5),(1-eo(seg(t,5.3,6)))*30);
+   const L=$('s2logo');const p=eo(seg(t,7.7,8.6));L.style.opacity=p;L.style.transform=`scale(${.92+.08*p})`;
+   $('shieldpath').setAttribute('stroke-dashoffset',200*(1-eio(seg(t,7.8,9))));
+   $('heart').setAttribute('opacity',eo(seg(t,8.8,9.3)));
+   rise($('s2tag'),t,9.1,.7,20);}
+  // S3
+  {rise($('s3t'),t,11.2,.7,30);
+   const p=eo(seg(t,11.1,12.4)), z=seg(t,12.4,16);
+   const s=$('s3shot');s.style.opacity=p;
+   s.style.transform=`perspective(2400px) translateY(${(1-p)*120}px) rotateX(${(1-p)*14}deg) scale(${1+.04*z})`;}
+  // S4: 4 detectors x 4.25s
+  {const i=clamp(Math.floor((t-16)/4.25),0,3), lt=(t-16)-i*4.25, d=DET[i];
+   if(i!==curDet){curDet=i;$('dimg').src=d.img;
+     $('dtext').innerHTML=`<div class="tag" style="background:${d.color}22;color:${d.color}">0${i+1} · ${d.tag}</div>
+       <div class="mid" style="margin-top:28px;font-size:60px">${d.title}</div>
+       <div class="small" style="margin-top:24px">${d.body}</div>`;
+     $('dshot').style.boxShadow=`0 40px 120px rgba(0,0,0,.7),0 0 0 2px ${d.color}66,0 0 140px ${d.color}33`;}
+   const fade=Math.min(eo(clamp(lt/.45)),1-clamp((lt-3.8)/.45));
+   $('dtext').style.opacity=i===0?Math.min(1-clamp((lt-3.8)/.45),eo(seg(t,16.2,16.8))):fade;
+   $('dtext').style.transform=`translateX(${(1-eo(clamp(lt/.6)))*-40}px)`;
+   const sp=i===3?Math.min(1,eo(clamp(lt/.45))):fade;
+   $('dshot').style.opacity=i===3?Math.min(eo(clamp(lt/.45)),1-seg(t,32.5,33)):fade;
+   $('dimg').style.transform=`scale(${1.55+.12*clamp(lt/4.25)})`;
+   for(let k=0;k<4;k++)$('dot'+k).style.background=k<i?'#475569':k===i?d.color:'#1e293b';}
+  // S5
+  {rise($('s5t'),t,33.2,.7,30);
+   const T0=34, T1=39.5, cd=seg(t,T0,T1), secs=Math.ceil(45*(1-cd));
+   $('cdring').setAttribute('stroke-dashoffset',326.7*cd);$('cdnum').textContent=secs+'s';
+   const levels=[['L1','#f59e0b',34.0],['L2','#fb923c',36.0],['L3','#ef4444',38.0]];
+   levels.forEach(([id,col,at],k)=>{const el=$(id),on=seg(t,at,at+.5),app=eo(seg(t,33.4+k*.15,34+k*.15));
+     el.style.opacity=app;el.style.transform=`translateY(${(1-app)*40}px) scale(${1+.04*Math.sin(Math.PI*on)})`;
+     el.style.borderColor=on>0?col:'#334155';el.style.color=on>0?col:'#64748b';
+     el.style.background=on>0?col+'1a':'rgba(15,23,42,.85)';
+     el.querySelector('.t').style.color=on>0?'#fff':'#64748b';});
+   $('levels').style.transform=`translateX(${-260*eo(seg(t,36,36.8))}px)`;
+   $('cdwrap').style.opacity=eo(seg(t,33.6,34.2));
+   $('cdwrap').style.transform=`translateX(${-260*eo(seg(t,36,36.8))}px)`;
+   const ph=eo(seg(t,36,36.8));$('phone').style.opacity=ph;$('phone').style.transform=`translateX(${(1-ph)*200}px)`;
+   const sm=eo(seg(t,36.5,37));$('sms').style.opacity=sm;$('sms').style.transform=`translateY(${(1-sm)*20}px)`;$('smsbtn').style.opacity=sm;}
+  // S6 typing
+  {const n=Math.floor(BRIEF.length*seg(t,42.4,46.6));$('brief').textContent=BRIEF.slice(0,n)+(t%0.6<.3&&t<47?'▌':'');}
+  // S7
+  STACK.forEach((s,i)=>rise($('st'+i),t,47.8+i*.18,.6,30));
+  // S8
+  rise($('s8line'),t,52.6,.8,24);rise($('s8meta'),t,53.4,.8,16);rise($('s8url'),t,53.6,.8,16);
+  // global fade to black at the end
+  document.body.style.filter=`brightness(${1-seg(t,57,58)})`;
+}
+window.render=render;window.DUR=DUR;render(0);
+</script>
+</body></html>
