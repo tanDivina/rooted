@@ -13,9 +13,9 @@ export class StoveHazardProcessor implements VideoProcessor {
   description = 'Notices a burner left on in an empty kitchen'
   enabled = true
 
-  private stoveActive = true
+  private stoveActive = false
   private personPresentInKitchen = false
-  private unattendedSince: number | null = Date.now() - 12000
+  private unattendedSince: number | null = null
   private hazardTriggered = false
   private onIncidentCallback?: (incident: any) => void
 
@@ -24,7 +24,7 @@ export class StoveHazardProcessor implements VideoProcessor {
   }
 
   async init(): Promise<void> {
-    this.stoveActive = true
+    this.stoveActive = false
     this.hazardTriggered = false
   }
 
@@ -55,6 +55,7 @@ export class StoveHazardProcessor implements VideoProcessor {
   reset() {
     this.hazardTriggered = false
     this.unattendedSince = null
+    this.stoveActive = false
   }
 
   async process(
@@ -65,26 +66,26 @@ export class StoveHazardProcessor implements VideoProcessor {
     const { width, height } = frame
     const now = Date.now()
 
-    // Stove Zone: Top-right quarter of the frame
+    // Stove zone: the cooktop in the middle of the kitchen camera's view
     const stoveZone = {
-      x: Math.floor(width * 0.62),
-      y: Math.floor(height * 0.15),
-      width: Math.floor(width * 0.32),
-      height: Math.floor(height * 0.35),
+      x: Math.floor(width * 0.3),
+      y: Math.floor(height * 0.3),
+      width: Math.floor(width * 0.4),
+      height: Math.floor(height * 0.25),
     }
 
     const elapsedUnattendedSec = this.unattendedSince
       ? Math.floor((now - this.unattendedSince) / 1000)
       : 0
 
-    let color = '#22C55E'
-    let label = 'STOVE ZONE: MONITORED / SAFE'
+    let color = '#5C6B37'
+    let label = 'Stove · all fine'
     let severity = 'normal'
 
     if (this.stoveActive) {
       if (elapsedUnattendedSec > 15 || this.hazardTriggered) {
-        color = '#EF4444' // Red
-        label = `🚨 DANGER: STOVE UNATTENDED (${elapsedUnattendedSec}s)`
+        color = '#A8432B' // ember
+        label = `Stove left on · kitchen empty ${elapsedUnattendedSec}s`
         severity = 'critical'
 
         if (!this.hazardTriggered) {
@@ -104,23 +105,19 @@ export class StoveHazardProcessor implements VideoProcessor {
           }
         }
       } else if (elapsedUnattendedSec > 8) {
-        color = '#F59E0B' // Amber warning
-        label = `⚠️ WARNING: STOVE UNATTENDED (${elapsedUnattendedSec}s)`
+        color = '#B7791F' // honey
+        label = `Stove on · kitchen empty ${elapsedUnattendedSec}s`
         severity = 'warning'
       } else {
-        color = '#38BDF8'
-        label = 'STOVE ACTIVE: CHEF PRESENT'
+        color = '#6B5242'
+        label = 'Stove on · someone’s cooking'
       }
     }
 
-    const boundingBoxes: BoundingBox[] = [
-      {
-        ...stoveZone,
-        label,
-        color,
-        confidence: 0.92,
-      },
-    ]
+    // Only outline the cooktop while a burner is on
+    const boundingBoxes: BoundingBox[] = this.stoveActive
+      ? [{ ...stoveZone, label, color, confidence: 0.92 }]
+      : []
 
     return {
       id: `stove-res-${now}`,

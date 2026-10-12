@@ -127,7 +127,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
     } else {
       // Timer expired -> Full dispatch
       this.escalationStatus.level = 3
-      this.escalationStatus.levelLabel = '🚨 EMERGENCY DISPATCH TRANSMITTED'
+      this.escalationStatus.levelLabel = 'Emergency services called'
     }
     this.notify()
   }

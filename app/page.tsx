@@ -254,6 +254,9 @@ export default function Dashboard() {
   // Cancel / Acknowledge active alarm
   const handleCancelAlarm = () => {
     failSafeSentinelProcessor.cancelAlarm('Resident Voice Confirmation: OK')
+    // Clear the demo overlays so the view goes back to calm
+    fallDetectionProcessor.reset()
+    stoveHazardProcessor.reset()
     if (activeIncident) {
       setIncidents((prev) =>
         prev.map((inc) => (inc.id === activeIncident.id ? { ...inc, resolved: true } : inc))
@@ -307,6 +310,7 @@ export default function Dashboard() {
       videoRef.current.play().catch(console.error)
     }
     setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 25, currentPreset: 'Living Room Floor (Auto-Slewed)' }))
+    stoveHazardProcessor.reset() // living room footage: no stove zone in view
     fallDetectionProcessor.triggerSimulatedFall()
   }
 
@@ -319,6 +323,7 @@ export default function Dashboard() {
       videoRef.current.play().catch(console.error)
     }
     setPanTilt((p) => ({ ...p, panAngle: 75, tiltAngle: -10, currentPreset: 'Kitchen Stove (Auto-Slewed)' }))
+    fallDetectionProcessor.reset() // kitchen footage: nobody in view
     stoveHazardProcessor.triggerSimulatedHazard()
   }
 

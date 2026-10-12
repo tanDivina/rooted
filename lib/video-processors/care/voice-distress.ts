@@ -141,7 +141,7 @@ export class VoiceDistressProcessor implements VideoProcessor {
         lastPhrase: this.lastDetectedPhrase || 'Listening for distress words...',
         engine: this.recognition ? 'Web Speech Engine' : 'Audio Analyzer Ready',
       },
-      message: active ? `🚨 SOS Keyword: "${this.lastDetectedPhrase}"` : undefined,
+      message: active ? `Heard: “${this.lastDetectedPhrase}”` : undefined,
     }
   }
 

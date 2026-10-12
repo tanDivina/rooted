@@ -114,8 +114,8 @@ export class FallDetectionProcessor implements VideoProcessor {
 
     // State machine for posture & fall detection
     let immobilitySec = 0
-    let color = '#22C55E' // Green: Normal
-    let statusLabel = 'POSTURE: UPRIGHT / ACTIVE'
+    let color = '#5C6B37' // moss: all well
+    let statusLabel = 'Up and moving'
     let confidence = 0.94
 
     if (this.fallTriggered || (aspectRatio > 1.35 && normalizedY > 0.6)) {
@@ -127,8 +127,8 @@ export class FallDetectionProcessor implements VideoProcessor {
 
       if (immobilitySec >= 3 || this.fallTriggered) {
         this.posture = 'fall_detected'
-        color = '#EF4444' // Red flashing
-        statusLabel = `🚨 CRITICAL: FALL DETECTED (${immobilitySec}s IMMOBILE)`
+        color = '#A8432B' // ember: a fall
+        statusLabel = `A fall · still for ${immobilitySec}s`
         confidence = 0.98
 
         // Fire incident once upon threshold crossing
@@ -150,22 +150,22 @@ export class FallDetectionProcessor implements VideoProcessor {
         }
       } else {
         this.posture = 'horizontal_floor'
-        color = '#F59E0B' // Amber
-        statusLabel = `WARNING: FLOOR LEVEL TRANSITION (${immobilitySec}s)`
+        color = '#B7791F' // honey: watching closely
+        statusLabel = `On the floor · ${immobilitySec}s`
         confidence = 0.82
       }
     } else if (normalizedY > 0.55 && aspectRatio > 0.8) {
       this.posture = 'sitting'
       this.floorContactStartTime = null
-      color = '#38BDF8' // Sky blue
-      statusLabel = 'POSTURE: SEATED / LOW VELOCITY'
+      color = '#6B5242' // bark: resting
+      statusLabel = 'Sitting down'
       confidence = 0.91
     } else {
       this.posture = 'standing'
       this.floorContactStartTime = null
       this.fallTriggered = false
-      color = '#22C55E' // Emerald
-      statusLabel = 'POSTURE: NORMAL / UPRIGHT'
+      color = '#5C6B37' // moss: all well
+      statusLabel = 'Up and moving'
       confidence = 0.95
     }
 

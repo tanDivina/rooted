@@ -48,14 +48,11 @@ export function useCanvasOverlay({ videoRef, canvasRef, events, results }: UseCa
       const recent = currentEvents.filter((e) => e.bounding_box).slice(0, 5)
       for (const e of recent) {
         const bb = e.bounding_box!
-        ctx.strokeStyle = e.event_type === 'person_detected' ? '#22D3EE' : '#22C55E'
-        ctx.lineWidth = 2
-        ctx.strokeRect(bb.x * scaleX, bb.y * scaleY, bb.width * scaleX, bb.height * scaleY)
-        ctx.fillStyle = ctx.strokeStyle
-        ctx.font = '12px monospace'
-        ctx.fillText(
-          `${e.event_type} ${e.confidence ? (e.confidence * 100).toFixed(0) + '%' : ''}`,
-          bb.x * scaleX, bb.y * scaleY - 4
+        drawTaggedBox(
+          ctx,
+          bb.x * scaleX, bb.y * scaleY, bb.width * scaleX, bb.height * scaleY,
+          e.event_type === 'person_detected' ? '#5C6B37' : '#B7791F',
+          `${e.event_type.replace('_', ' ')}${e.confidence ? ` · ${(e.confidence * 100).toFixed(0)}%` : ''}`
         )
       }
 
@@ -65,14 +62,12 @@ export function useCanvasOverlay({ videoRef, canvasRef, events, results }: UseCa
         if (result.processorId === 'amazon-logo-game') return
         if (result.boundingBoxes) {
           for (const bb of result.boundingBoxes) {
-            ctx.strokeStyle = bb.color || '#FF00FF'
-            ctx.lineWidth = 2
-            ctx.strokeRect(bb.x * scaleX, bb.y * scaleY, bb.width * scaleX, bb.height * scaleY)
-            if (bb.label) {
-              ctx.fillStyle = ctx.strokeStyle
-              ctx.font = '11px monospace'
-              ctx.fillText(bb.label, bb.x * scaleX, bb.y * scaleY - 4)
-            }
+            drawTaggedBox(
+              ctx,
+              bb.x * scaleX, bb.y * scaleY, bb.width * scaleX, bb.height * scaleY,
+              bb.color || '#5C6B37',
+              bb.label
+            )
           }
         }
       })
@@ -227,4 +222,37 @@ function drawFireEffect(ctx: CanvasRenderingContext2D, x: number, y: number, tim
   ctx.arc(x, y, 35, 0, Math.PI * 2)
   ctx.fillStyle = innerGlow
   ctx.fill()
+}
+
+/** Rooted-style detection box: soft rounded outline with a pill-shaped label above it. */
+function drawTaggedBox(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  color: string,
+  label?: string
+) {
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = 3
+  ctx.setLineDash([])
+  ctx.beginPath()
+  ctx.roundRect(x, y, w, h, 14)
+  ctx.stroke()
+  if (label) {
+    ctx.font = '600 13px Inter, system-ui, sans-serif'
+    const tw = ctx.measureText(label).width
+    const ph = 24
+    // Above the box when there's room; otherwise tucked inside along its top edge, centred
+    const above = y - ph - 6 >= 44
+    const px = above ? x : x + (w - tw - 22) / 2
+    const py = above ? y - ph - 6 : y + 12
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.roundRect(px, py, tw + 22, ph, ph / 2)
+    ctx.fill()
+    ctx.fillStyle = '#FBF8F1'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, px + 11, py + ph / 2 + 0.5)
+  }
+  ctx.restore()
 }
