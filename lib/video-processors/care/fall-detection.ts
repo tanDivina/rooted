@@ -12,8 +12,10 @@ export interface FallDetectionData {
 /**
  * Fall & Slip Detection Processor for Ring Cameras
  * 
- * Analyzes human pose geometry, centroid velocity, and prolonged floor immobility.
- * Detects rapid transitions from upright posture to floor-level horizontal orientation.
+ * A lightweight shape-and-motion heuristic (not a pose model): it boxes the
+ * foreground, then watches the box's aspect ratio, how fast its centre drops,
+ * and how long it stays still near the floor. A pose model such as MediaPipe
+ * Pose is the natural upgrade.
  */
 export class FallDetectionProcessor implements VideoProcessor {
   id = 'care-fall-detection'

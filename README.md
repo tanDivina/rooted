@@ -10,6 +10,10 @@
 ![Ring Partner API](https://img.shields.io/badge/Ring%20API-AVA%20v1-5C6B37)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+![Rooted dashboard](docs/screenshots/dashboard.png)
+
+**Demo video (under 3 min):** see the Devpost submission · **Try it:** `npm install && npm run dev`, then press **A fall**.
+
 ---
 
 ## Why stay rooted
@@ -33,7 +37,7 @@ What drives families toward a move is usually fear of the fall nobody sees. [Abo
 
 ## What Rooted watches for: the four roots
 
-1. **A fall.** Pose geometry, centroid velocity and stillness at floor level on the live Ring stream.
+1. **A fall.** A sudden drop to floor level followed by stillness, read from the live Ring stream in the browser (a lightweight shape-and-motion heuristic today; a pose model is the planned upgrade).
 2. **A stove left on.** A burner active in the kitchen zone while nobody is there.
 3. **A call for help.** Phrases like “Help!”, “I fell!” or “¡Ayuda!” through the camera’s two-way audio.
 4. **A quiet camera.** A missed heartbeat (Wi-Fi or power down) moves alerts onto a cellular backup.
@@ -48,6 +52,14 @@ When something is wrong, a 45-second check-in countdown starts. One “I’m oka
 
 Every moment is kept in **Growth rings**, the caregiver’s timeline.
 
+**Hard to cancel by accident, easy to cancel on purpose.** “I’m okay” is a 2.5-second hold, so a stray tap can’t dismiss a real fall. “Send help now” gives a 15-second grace window in case it was pressed by mistake, and every cancel is followed by a 60-second quiet check.
+
+**Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener add context (medicine cabinet opened, a trip to the fridge, the front door at night), and a Ring Pan-Tilt Indoor Cam can turn toward whatever needs a look.
+
+| Alert | Countdown | Help sent |
+| :---: | :---: | :---: |
+| ![Fall alert](docs/screenshots/fall-alert.png) | ![Growth rings](docs/screenshots/growth-rings.png) | ![Why stay rooted](docs/screenshots/why.png) |
+
 ---
 
 ## Architecture
@@ -56,7 +68,7 @@ Every moment is kept in **Growth rings**, the caregiver’s timeline.
 Ring camera (AVA: WebRTC stream, status, events)
         │
         ▼
-Roots: in-browser vision & audio (MediaPipe Pose, stove zone, keyword listener)
+Roots: in-browser vision & audio (fall heuristic, stove zone, keyword listener)
         │  incident
         ▼
 Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
@@ -76,8 +88,8 @@ Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
 
 ### 1. Installation
 ```bash
-git clone https://github.com/dorienvandenabbeele/ringcare-guardian.git
-cd ringcare-guardian
+git clone https://github.com/tanDivina/rooted.git
+cd rooted
 npm install
 ```
 
@@ -117,22 +129,48 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 
 ---
 
+## What’s real and what’s simulated
+
+| Real, against the Ring API (AVA v1) | Simulated for the demo |
+| :--- | :--- |
+| Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Ring Alarm contact, motion and smoke/CO sensors |
+| Live video over WebRTC (WHEP sessions) with the detectors running on each frame | Pan-Tilt motor control |
+| Playground access tokens and OAuth refresh-token flow | In-home chime and voice check through the camera speaker |
+| Signed webhooks streamed to the dashboard over SSE | Family SMS / calls and the 911 dispatch |
+
+The **Try a moment** buttons play generated footage of a living room, a kitchen and a porch (`scripts/generate_demo_videos.py`) through the same detectors, so the app works without a camera.
+
+## Built during the hackathon
+
+Rooted started from Amazon’s [Ring API Hello World](https://github.com/AmazonAppDev/ring-api-helloworld) starter (auth, device list, WHEP player, webhook receiver, video-processor framework). Everything else was built for this hackathon: the four care detectors (`lib/video-processors/care/`), the check-in countdown and three-step escalation, the caregiver timeline and paramedic brief, the heartbeat and cellular-fallback model, pan-tilt and sensor fusion, the demo footage generator, the `/why` research page, and the whole Rooted design (palette, type and a custom icon set).
+
+---
+
 ## Hackathon tracks
 
 - **Primary track:** Ring (Caretaking & Accessibility).
 - **AWS Builder mini-challenge:** the paramedic brief is a structured template today; the next step is generating it with AWS Bedrock and sending alerts through AWS SNS.
-- **Open source mini-challenge:** MIT licensed.
+- **Open source mini-challenge:** MIT licensed; see [LICENSE](LICENSE).
 
 ---
 
-## Product feedback for the Ring Developer Platform
+## Product feedback: friction log
 
-As part of the hackathon submission requirements, here is feedback based on development:
-1. **WHEP WebRTC Streaming**: Standard WebRTC HTTP Egress Protocol works exceptionally well in browsers without requiring native RTSP transcoders.
-2. **Playground Tokens**: The 30-minute self-serve Playground access token makes initial developer bootstrapping friction-free.
-3. **Wishlist**: Adding an indoor camera simulation stream (living room or kitchen) in the Playground alongside outdoor package/car streams would greatly accelerate development for elder care and IoT home automation apps.
+What worked well, and what slowed us down, building on the Ring Developer Platform:
+
+**Worked well**
+1. **WHEP streaming.** Standard WebRTC egress plays in the browser with no RTSP transcoding, and frames can be read straight into a canvas for on-device analysis.
+2. **Playground tokens.** Getting a first token takes minutes, and the starter app runs on the first try.
+3. **The starter template.** The video-processor interface (`init` / `process` / `cleanup`) made it easy to drop in new detectors.
+
+**Friction**
+1. **Playground tokens last 30 minutes.** Long build or demo sessions mean re-pasting a token, and a care dashboard is meant to stay open all day. A longer-lived development token would help.
+2. **No indoor simulator stream.** The Playground streams are outdoor scenes (packages, cars). Care and accessibility apps need a living room, a kitchen and a person who sits, stands and falls. We had to generate our own footage.
+3. **No API for the camera speaker or two-way audio.** The gentlest step of any care escalation is a voice check through the camera, and we couldn’t find a public endpoint for it, so it is simulated.
+4. **No pan-tilt or Ring Alarm sensor endpoints.** The pan-tilt and contact, motion and smoke sensors are where a care app gets most of its context, and none of them were available to us.
+5. **Long-lived event streams and tooling.** Our SSE webhook relay keeps a connection open, so headless test tools that wait for “network idle” never finish. Not a Ring bug, but a short note in the template docs would help.
 
 ---
 
 ## License
-MIT © 2026 Dorien Van den Abbeele
+MIT. Rooted © 2026 Dorien Van den Abbeele; portions from the Ring API Hello World starter © 2026 Amazon. See [LICENSE](LICENSE).

@@ -544,7 +544,7 @@ export default function Dashboard() {
           />
 
           <div className="flex items-center justify-between px-2 text-[12px] text-bark-mute">
-            <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
+            <span>Ring Partner API · WebRTC (WHEP) · on-device detection</span>
             <span>~120 ms · 1080p · 30 fps</span>
           </div>
         </section>

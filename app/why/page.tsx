@@ -61,7 +61,7 @@ const FINDINGS = [
 ]
 
 const ROOTS = [
-  { Icon: FallIcon, title: 'A fall', body: 'Pose and movement on the Ring stream reveal a fall and stillness on the floor within seconds.' },
+  { Icon: FallIcon, title: 'A fall', body: 'A sudden drop to the floor and stillness afterwards, noticed on the Ring stream within seconds.' },
   { Icon: KettleIcon, title: 'A stove left on', body: 'A burner burning in an empty kitchen gets a gentle reminder, then a louder one.' },
   { Icon: VoiceIcon, title: 'A call for help', body: '“Help!”, “I fell!” or “¡Ayuda!” heard through the camera’s two-way audio.' },
   { Icon: SapIcon, title: 'A quiet camera', body: 'If Wi-Fi or power fails, a missing heartbeat switches alerts to cellular.' },
