@@ -56,7 +56,7 @@ Every moment is kept in **Growth rings**, the caregiver’s timeline.
 
 **Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener add context (medicine cabinet opened, a trip to the fridge, the front door at night), and a Ring Pan-Tilt Indoor Cam can turn toward whatever needs a look.
 
-| Alert | Countdown | Help sent |
+| A fall, and the check-in | Growth rings | Why stay rooted |
 | :---: | :---: | :---: |
 | ![Fall alert](docs/screenshots/fall-alert.png) | ![Growth rings](docs/screenshots/growth-rings.png) | ![Why stay rooted](docs/screenshots/why.png) |
 
