@@ -57,6 +57,15 @@ export const RootsIcon = (p: IconProps) => (
 export const RingsIcon = (p: IconProps) => (
   <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 6.5c3.2 0 5.6 2.4 5.4 5.6-.2 3-2.6 5.2-5.6 5-2.6-.2-4.4-2.2-4.2-4.8.2-2.2 2-3.8 4.2-3.6 1.8.2 3 1.6 2.8 3.4-.2 1.2-1.2 2-2.4 2" /></Svg>
 )
+export const SensorsIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 12a7 7 0 0 1 14 0" />
+    <path d="M8.5 12a3.5 3.5 0 0 1 7 0" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+    <path d="M12 13v8" />
+    <path d="M9 21h6" />
+  </Svg>
+)
 export const FallIcon = (p: IconProps) => (
   <Svg {...p}><circle cx="16.5" cy="5" r="2" /><path d="M14.5 8.5 9 11l-2.5 4.5" /><path d="M9 11l3.5 3.5L17 13" /><path d="M3 20h18" /></Svg>
 )

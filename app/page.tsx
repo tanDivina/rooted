@@ -15,13 +15,23 @@ import { CareIncidentModal } from './components/CareIncidentModal'
 import { CareScenarioSelector } from './components/CareScenarioSelector'
 import { CareTelemetryBar } from './components/CareTelemetryBar'
 import { CaregiverTimeline } from './components/CaregiverTimeline'
+import { PanTiltControl } from './components/PanTiltControl'
+import { SensorGrid } from './components/SensorGrid'
 import { useWebRTCStream } from './hooks/useWebRTCStream'
 import { useEventStream } from './hooks/useEventStream'
 import { useCanvasOverlay } from './hooks/useCanvasOverlay'
-import { CareIncident, DeviceTelemetry, EscalationStatus } from '@/lib/types/care'
-import { TreeMark, PlayIcon, StopIcon, SignalOffIcon, RingsIcon, RootsIcon, SapIcon } from './components/icons'
+import {
+  CareIncident,
+  DeviceTelemetry,
+  EscalationStatus,
+  PanTiltState,
+  ContactSensor,
+  MotionSensor,
+  SmokeCOListener,
+} from '@/lib/types/care'
+import { TreeMark, PlayIcon, StopIcon, SignalOffIcon, RingsIcon, RootsIcon, SapIcon, SensorsIcon } from './components/icons'
 
-type RightPanelTab = 'incidents' | 'processors' | 'events'
+type RightPanelTab = 'incidents' | 'sensors' | 'processors' | 'events'
 type AuthMode = 'access_token' | 'refresh_token' | null
 
 export default function Dashboard() {
@@ -32,6 +42,67 @@ export default function Dashboard() {
   const [authMode, setAuthMode] = useState<AuthMode>(null)
   const [authError, setAuthError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Pan-Tilt Camera State
+  const [panTilt, setPanTilt] = useState<PanTiltState>({
+    panAngle: 0,
+    tiltAngle: 15,
+    zoom: 1,
+    currentPreset: 'Living Room Couch',
+    isMoving: false,
+    autoTracking: true,
+  })
+
+  // Ring Alarm Sensors State
+  const [contactSensors, setContactSensors] = useState<ContactSensor[]>([
+    {
+      id: 'sensor-med',
+      name: 'Medicine Cabinet',
+      type: 'medicine_cabinet',
+      state: 'closed',
+      lastChanged: Date.now() - 3600000 * 3,
+      battery: 98,
+      complianceStatus: 'compliant',
+      notes: 'Morning dose taken at 08:24 AM',
+    },
+    {
+      id: 'sensor-fridge',
+      name: 'Refrigerator Door',
+      type: 'refrigerator',
+      state: 'closed',
+      lastChanged: Date.now() - 3600000,
+      battery: 95,
+      complianceStatus: 'compliant',
+      notes: '4 openings today (Hydration normal)',
+    },
+    {
+      id: 'sensor-front-door',
+      name: 'Front Entry Door',
+      type: 'front_door',
+      state: 'closed',
+      lastChanged: Date.now() - 3600000 * 5,
+      battery: 92,
+      complianceStatus: 'compliant',
+      notes: 'Night wandering monitor armed',
+    },
+  ])
+
+  const [motionSensors, setMotionSensors] = useState<MotionSensor[]>([
+    { id: 'pir-lr', name: 'Living Room', room: 'living_room', motionDetected: true, lastMotionTime: Date.now(), battery: 96 },
+    { id: 'pir-kit', name: 'Kitchen Cooktop', room: 'kitchen', motionDetected: false, lastMotionTime: Date.now() - 1800000, battery: 94 },
+    { id: 'pir-hall', name: 'Main Hallway', room: 'hallway', motionDetected: false, lastMotionTime: Date.now() - 900000, battery: 97 },
+    { id: 'pir-bed', name: 'Master Bedroom', room: 'bedroom', motionDetected: false, lastMotionTime: Date.now() - 21600000, battery: 95 },
+  ])
+
+  const [smokeCO, setSmokeCO] = useState<SmokeCOListener>({
+    id: 'smoke-kit',
+    name: 'Smoke & CO Listener',
+    smokeAlarmDetected: false,
+    coAlarmDetected: false,
+    lastTestTime: Date.now() - 86400000 * 4,
+    battery: 100,
+    status: 'normal',
+  })
 
   // Caretaking State
   const [incidents, setIncidents] = useState<CareIncident[]>([
@@ -60,6 +131,25 @@ export default function Dashboard() {
     cloudSentinelActive: true,
     deadMansSwitchArmed: false,
     activeIncident: null,
+    panTilt: {
+      panAngle: 0,
+      tiltAngle: 15,
+      zoom: 1,
+      currentPreset: 'Living Room Couch',
+      isMoving: false,
+      autoTracking: true,
+    },
+    contactSensors: [],
+    motionSensors: [],
+    smokeCO: {
+      id: 'smoke-kit',
+      name: 'Smoke & CO Listener',
+      smokeAlarmDetected: false,
+      coAlarmDetected: false,
+      lastTestTime: Date.now(),
+      battery: 100,
+      status: 'normal',
+    },
   })
   const [escalation, setEscalation] = useState<EscalationStatus>({
     active: false,
@@ -216,6 +306,7 @@ export default function Dashboard() {
       videoRef.current.loop = true
       videoRef.current.play().catch(console.error)
     }
+    setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 25, currentPreset: 'Living Room Floor (Auto-Slewed)' }))
     fallDetectionProcessor.triggerSimulatedFall()
   }
 
@@ -227,6 +318,7 @@ export default function Dashboard() {
       videoRef.current.loop = true
       videoRef.current.play().catch(console.error)
     }
+    setPanTilt((p) => ({ ...p, panAngle: 75, tiltAngle: -10, currentPreset: 'Kitchen Stove (Auto-Slewed)' }))
     stoveHazardProcessor.triggerSimulatedHazard()
   }
 
@@ -239,8 +331,99 @@ export default function Dashboard() {
     setIsOffline((prev) => !prev)
   }
 
+  const handleSimulateContactOpen = (sensorId: string) => {
+    setContactSensors((prev) =>
+      prev.map((s) => {
+        if (s.id !== sensorId) return s
+        const nextState = s.state === 'open' ? 'closed' : 'open'
+        const now = Date.now()
+        if (nextState === 'open') {
+          if (s.type === 'medicine_cabinet') {
+            setIncidents((cur) => [
+              {
+                id: `med-${now}`,
+                type: 'routine_inactivity',
+                severity: 'low',
+                timestamp: now,
+                title: 'Medicine Cabinet Opened',
+                description: 'Prescription dose confirmed via Ring Alarm Contact Sensor.',
+                confidence: 1.0,
+                resolved: true,
+                escalationLevel: 0,
+              },
+              ...cur,
+            ])
+            setPanTilt((p) => ({ ...p, panAngle: -85, tiltAngle: 5, currentPreset: 'Medicine Cabinet (Auto-Slewed)' }))
+          } else if (s.type === 'refrigerator') {
+            setIncidents((cur) => [
+              {
+                id: `fridge-${now}`,
+                type: 'routine_inactivity',
+                severity: 'low',
+                timestamp: now,
+                title: 'Refrigerator Opened',
+                description: 'Nutrition and hydration check verified in kitchen.',
+                confidence: 1.0,
+                resolved: true,
+                escalationLevel: 0,
+              },
+              ...cur,
+            ])
+          } else if (s.type === 'front_door') {
+            setIncidents((cur) => [
+              {
+                id: `door-${now}`,
+                type: 'routine_inactivity',
+                severity: 'medium',
+                timestamp: now,
+                title: 'Front Entry Door Opened',
+                description: 'Perimeter access registered. Monitoring safe return.',
+                confidence: 1.0,
+                resolved: true,
+                escalationLevel: 0,
+              },
+              ...cur,
+            ])
+            setPanTilt((p) => ({ ...p, panAngle: 160, tiltAngle: 0, currentPreset: 'Front Door (Auto-Slewed)' }))
+          }
+        }
+        return {
+          ...s,
+          state: nextState,
+          lastChanged: now,
+        }
+      })
+    )
+  }
+
+  const handleSimulateSmokeAlarm = () => {
+    const nextDetected = !smokeCO.smokeAlarmDetected
+    setSmokeCO((prev) => ({
+      ...prev,
+      smokeAlarmDetected: nextDetected,
+      status: nextDetected ? 'smoke_detected' : 'normal',
+    }))
+
+    if (nextDetected) {
+      const now = Date.now()
+      setPanTilt((p) => ({ ...p, panAngle: 75, tiltAngle: -10, currentPreset: 'Kitchen Cooktop (Auto-Slewed)' }))
+      handleNewIncident({
+        id: `smoke-${now}`,
+        type: 'smoke_co_alarm',
+        severity: 'critical',
+        timestamp: now,
+        title: '🚨 Ring Smoke & CO Listener: UL Smoke Siren Detected',
+        description: 'Acoustic pattern matched T3 smoke alarm temporal pattern in kitchen area. Automated fire evacuation matrix engaged.',
+        confidence: 0.99,
+        resolved: false,
+        escalationLevel: 1,
+      })
+    }
+  }
+
   const tabs: { id: RightPanelTab; label: string; Icon: typeof RingsIcon; count?: number }[] = [
     { id: 'incidents', label: 'Growth rings', Icon: RingsIcon, count: incidents.length },
+    { id: 'sensors', label: 'Ring sensors', Icon: SensorsIcon, count: contactSensors.length + motionSensors.length },
     { id: 'processors', label: 'Roots', Icon: RootsIcon, count: enabledCount || undefined },
     { id: 'events', label: 'Signals', Icon: SapIcon },
   ]
@@ -267,8 +450,8 @@ export default function Dashboard() {
       <CareTelemetryBar telemetry={telemetry} escalation={escalation} />
 
       <div className="flex-1 flex gap-5 min-h-0 px-6 pb-5">
-        {/* Left: the window into the home */}
-        <section className="w-[60%] flex flex-col gap-2 min-w-0">
+        {/* Left: the window into the home + Pan-Tilt controller */}
+        <section className="w-[60%] flex flex-col gap-3 min-w-0">
           <div className="relative flex-1 overflow-hidden rounded-[28px] bg-[#2B2019] shadow-leaf ring-1 ring-bark/10 flex items-center justify-center">
             <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
@@ -349,13 +532,19 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Pan-Tilt Motorized Controller */}
+          <PanTiltControl
+            panTilt={panTilt}
+            onUpdate={(u) => setPanTilt((prev) => ({ ...prev, ...u }))}
+          />
+
           <div className="flex items-center justify-between px-2 text-[12px] text-bark-mute">
             <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
             <span>~120 ms · 1080p · 30 fps</span>
           </div>
         </section>
 
-        {/* Right: rings, roots and signals */}
+        {/* Right: rings, roots, sensors and signals */}
         <aside className="w-[40%] flex flex-col min-w-0 rounded-[28px] border border-bark-line bg-parchment-paper/70">
           <nav className="flex items-center gap-1.5 p-3">
             {tabs.map(({ id, label, Icon, count }) => (
@@ -385,9 +574,21 @@ export default function Dashboard() {
               }
             />
           )}
+
+          {rightPanelTab === 'sensors' && (
+            <SensorGrid
+              contactSensors={contactSensors}
+              motionSensors={motionSensors}
+              smokeCO={smokeCO}
+              onSimulateContactOpen={handleSimulateContactOpen}
+              onSimulateSmokeAlarm={handleSimulateSmokeAlarm}
+            />
+          )}
+
           {rightPanelTab === 'processors' && (
             <ProcessorPanel processors={processors} results={results} onToggle={toggleProcessor} />
           )}
+
           {rightPanelTab === 'events' && <EventPanel events={events} webhookUrl={webhookUrl} />}
         </aside>
       </div>

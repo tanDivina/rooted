@@ -7,6 +7,9 @@ export type IncidentType =
   | 'voice_distress'
   | 'heartbeat_loss'
   | 'routine_inactivity'
+  | 'medication_missed'
+  | 'night_wandering'
+  | 'smoke_co_alarm'
 
 export interface CareIncident {
   id: string
@@ -22,6 +25,45 @@ export interface CareIncident {
   metadata?: Record<string, any>
 }
 
+export interface PanTiltState {
+  panAngle: number // -180 to 180 degrees
+  tiltAngle: number // -45 to 90 degrees
+  zoom: number // 1x to 4x
+  currentPreset: string
+  isMoving: boolean
+  autoTracking: boolean
+}
+
+export interface ContactSensor {
+  id: string
+  name: string
+  type: 'medicine_cabinet' | 'refrigerator' | 'front_door'
+  state: 'closed' | 'open'
+  lastChanged: number
+  battery: number
+  complianceStatus?: 'compliant' | 'warning' | 'pending'
+  notes?: string
+}
+
+export interface MotionSensor {
+  id: string
+  name: string
+  room: 'living_room' | 'kitchen' | 'hallway' | 'bedroom'
+  motionDetected: boolean
+  lastMotionTime: number
+  battery: number
+}
+
+export interface SmokeCOListener {
+  id: string
+  name: string
+  smokeAlarmDetected: boolean
+  coAlarmDetected: boolean
+  lastTestTime: number
+  battery: number
+  status: 'normal' | 'smoke_detected' | 'co_detected'
+}
+
 export interface DeviceTelemetry {
   deviceId: string
   name: string
@@ -33,6 +75,10 @@ export interface DeviceTelemetry {
   cloudSentinelActive: boolean
   deadMansSwitchArmed: boolean
   activeIncident: CareIncident | null
+  panTilt?: PanTiltState
+  contactSensors?: ContactSensor[]
+  motionSensors?: MotionSensor[]
+  smokeCO?: SmokeCOListener
 }
 
 export interface EscalationStatus {
