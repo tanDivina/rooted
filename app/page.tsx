@@ -301,20 +301,35 @@ export default function Dashboard() {
   const [activeVideoSrc, setActiveVideoSrc] = useState<string | null>(null)
 
   // Simulated scenario triggers
+  // The fall clip plays once: a walk, a fall at ~3.5s, then stillness. The alert waits
+  // until the person has been still on the floor for ~4s, as it would on a live camera.
+  const fallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const clearFallTimer = () => {
+    if (fallTimerRef.current) clearTimeout(fallTimerRef.current)
+    fallTimerRef.current = null
+  }
+  useEffect(() => clearFallTimer, [])
+
   const triggerFallScenario = () => {
+    clearFallTimer()
     setActiveVideoSrc('/videos/fall-scenario.mp4')
     if (videoRef.current) {
       videoRef.current.srcObject = null
       videoRef.current.src = '/videos/fall-scenario.mp4'
-      videoRef.current.loop = true
+      videoRef.current.loop = false
       videoRef.current.play().catch(console.error)
     }
     setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 25, currentPreset: 'Living Room Floor (Auto-Slewed)' }))
     stoveHazardProcessor.reset() // living room footage: no stove zone in view
-    fallDetectionProcessor.triggerSimulatedFall()
+    fallDetectionProcessor.reset()
+    fallTimerRef.current = setTimeout(() => {
+      fallTimerRef.current = null
+      fallDetectionProcessor.triggerSimulatedFall()
+    }, 7500)
   }
 
   const triggerStoveScenario = () => {
+    clearFallTimer()
     setActiveVideoSrc('/videos/stove-scenario.mp4')
     if (videoRef.current) {
       videoRef.current.srcObject = null
@@ -328,6 +343,7 @@ export default function Dashboard() {
   }
 
   const triggerVoiceScenario = () => {
+    clearFallTimer()
     voiceDistressProcessor.triggerSimulatedDistress('Help me, I can’t get up!')
   }
 
