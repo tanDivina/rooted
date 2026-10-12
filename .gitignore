@@ -32,3 +32,6 @@ dist/
 # Misc
 *.log
 *.tsbuildinfo
+
+# Promo video working files (kept locally, not in the repo)
+promo/
