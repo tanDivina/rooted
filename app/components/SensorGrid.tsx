@@ -2,19 +2,7 @@
 
 import React from 'react'
 import { ContactSensor, MotionSensor, SmokeCOListener } from '@/lib/types/care'
-import {
-  Pill,
-  Refrigerator,
-  DoorClosed,
-  DoorOpen,
-  Activity,
-  Flame,
-  ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Sparkles,
-} from 'lucide-react'
+import { PillIcon, FridgeIcon, DoorIcon, MotionIcon, SmokeIcon, CheckIcon } from './icons'
 
 interface SensorGridProps {
   contactSensors: ContactSensor[]
@@ -24,6 +12,16 @@ interface SensorGridProps {
   onSimulateSmokeAlarm: () => void
 }
 
+const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+function ago(ms: number) {
+  const min = Math.round((Date.now() - ms) / 60000)
+  if (min < 1) return 'now'
+  if (min < 60) return `${min}m ago`
+  return `${Math.round(min / 60)}h ago`
+}
+
+/** Ring Alarm sensors as the household's daily rhythms: doors, rooms and the smoke alarm. */
 export function SensorGrid({
   contactSensors,
   motionSensors,
@@ -31,168 +29,114 @@ export function SensorGrid({
   onSimulateContactOpen,
   onSimulateSmokeAlarm,
 }: SensorGridProps) {
+  const alarm = smokeCO.smokeAlarmDetected || smokeCO.coAlarmDetected
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col text-xs text-white">
-      {/* Header */}
-      <div className="border-b border-slate-700/80 pb-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <span>📡 Ring Alarm Multi-Sensor Fusion</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-800 text-cyan-300 font-mono">
-              8 Nodes Active
-            </span>
-          </h2>
-          <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Z-Wave Mesh Healthy
+    <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-6">
+      <div className="pt-1">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-serif text-xl font-semibold">Daily rhythms</h2>
+          <span className="flex items-center gap-1.5 text-[12px] text-moss-deep">
+            <span className="h-1.5 w-1.5 rounded-full bg-moss animate-breathe" />
+            {contactSensors.length + motionSensors.length + 1} Ring Alarm sensors
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 mt-0.5">
-          Indoor PIR Motion, Contact Sensors, & Smoke/CO Acoustic Listeners
+        <p className="text-[13px] text-bark-mute">
+          Small signs of an ordinary day: medicine taken, the fridge opened, someone moving between rooms.
         </p>
       </div>
 
-      {/* 1. Daily Routine Contact Sensors */}
-      <div className="space-y-2">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>Contact Sensors (Routines & Adherence)</span>
-          <span className="text-cyan-400 text-[10px]">Ring Alarm Contacts</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {contactSensors.map((sensor) => {
-            const isMedicine = sensor.type === 'medicine_cabinet'
-            const isFridge = sensor.type === 'refrigerator'
-            const isDoor = sensor.type === 'front_door'
-
-            return (
-              <div
-                key={sensor.id}
-                className="p-3 rounded-xl bg-slate-800/70 border border-slate-700/80 flex flex-col justify-between gap-2.5 transition hover:border-slate-600"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
-                      {isMedicine && <Pill className="w-4 h-4 text-emerald-400" />}
-                      {isFridge && <Refrigerator className="w-4 h-4 text-cyan-400" />}
-                      {isDoor && (sensor.state === 'open' ? <DoorOpen className="w-4 h-4 text-amber-400" /> : <DoorClosed className="w-4 h-4 text-slate-400" />)}
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{sensor.name}</h4>
-                      <span className="text-[10px] text-slate-400">
-                        {sensor.state === 'open' ? (
-                          <strong className="text-amber-400">Currently OPEN</strong>
-                        ) : (
-                          'Closed & Secured'
-                        )}
+      {/* Contact sensors */}
+      <section className="space-y-2.5">
+        <div className="eyebrow">Doors &amp; cabinets</div>
+        {contactSensors.map((sensor) => {
+          const open = sensor.state === 'open'
+          const Icon =
+            sensor.type === 'medicine_cabinet' ? PillIcon : sensor.type === 'refrigerator' ? FridgeIcon : DoorIcon
+          return (
+            <div key={sensor.id} className="card !p-4">
+              <div className="flex items-start gap-3">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${open ? 'bg-honey-wash text-honey' : 'bg-moss-wash text-moss'}`}>
+                  <Icon className="w-[18px] h-[18px]" {...(sensor.type === 'front_door' ? { open } : {})} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-[14.5px] font-semibold">{sensor.name}</h3>
+                    {sensor.complianceStatus === 'compliant' && !open && (
+                      <span className="flex items-center gap-1 text-[12px] font-medium text-moss">
+                        <CheckIcon className="w-3.5 h-3.5" />
+                        On track
                       </span>
-                    </div>
+                    )}
+                    {open && <span className="rounded-full bg-honey-wash px-2 py-0.5 text-[11px] font-semibold text-[#7a4f12]">Open</span>}
                   </div>
-
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    sensor.complianceStatus === 'compliant'
-                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                      : 'bg-slate-700 text-slate-300'
-                  }`}>
-                    {sensor.complianceStatus === 'compliant' ? 'Verified' : 'Active'}
-                  </span>
+                  <p className="mt-0.5 text-[13px] text-bark-soft">{sensor.notes || 'Watching the routine'}</p>
+                  <div className="mt-2.5 flex items-center justify-between">
+                    <span className="text-[12px] text-bark-mute">Last changed {time(sensor.lastChanged)}</span>
+                    <button onClick={() => onSimulateContactOpen(sensor.id)} className="btn-ghost !px-3 !py-1 !text-[12px]">
+                      Try: {open ? 'close' : 'open'}
+                    </button>
+                  </div>
                 </div>
-
-                <div className="bg-slate-950/60 rounded-lg p-2 text-[10px] text-slate-300 flex items-center justify-between">
-                  <span className="truncate pr-1">{sensor.notes || 'Routine monitored'}</span>
-                  <span className="text-slate-500 font-mono shrink-0">
-                    {new Date(sensor.lastChanged).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => onSimulateContactOpen(sensor.id)}
-                  className="w-full py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10px] font-semibold text-slate-300 transition active:scale-95"
-                >
-                  Simulate {sensor.state === 'open' ? 'Close' : 'Open'}
-                </button>
               </div>
-            )
-          })}
-        </div>
-      </div>
+            </div>
+          )
+        })}
+      </section>
 
-      {/* 2. Multi-Room PIR Motion Grid */}
-      <div className="space-y-2 pt-1">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>Indoor Motion Detectors (PIR Occupancy)</span>
-          <span className="text-slate-500 text-[10px]">Room-by-Room Tracking</span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* Motion */}
+      <section className="space-y-2.5">
+        <div className="eyebrow">Who’s moving where</div>
+        <div className="grid grid-cols-2 gap-2">
           {motionSensors.map((sensor) => (
             <div
               key={sensor.id}
-              className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition ${
-                sensor.motionDetected
-                  ? 'bg-cyan-950/40 border-cyan-500 shadow-sm shadow-cyan-950/50'
-                  : 'bg-slate-800/50 border-slate-700/60'
+              className={`rounded-2xl border px-3.5 py-3 transition ${
+                sensor.motionDetected ? 'border-moss/40 bg-moss-wash/70' : 'border-bark-line bg-parchment-paper'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-white truncate">{sensor.name}</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    sensor.motionDetected ? 'bg-cyan-400 animate-ping' : 'bg-slate-600'
-                  }`}
-                />
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-[13.5px] font-semibold">{sensor.name}</span>
+                <MotionIcon className={`w-4 h-4 shrink-0 ${sensor.motionDetected ? 'text-moss animate-breathe' : 'text-bark-line'}`} />
               </div>
-
-              <div className="text-[10px] text-slate-400 flex items-center justify-between">
-                <span>{sensor.motionDetected ? 'Active Presence' : 'Idle'}</span>
-                <span className="font-mono text-slate-500">
-                  {sensor.motionDetected ? 'Now' : '15m ago'}
-                </span>
+              <div className="mt-0.5 text-[12px] text-bark-mute">
+                {sensor.motionDetected ? 'Someone’s here now' : `Quiet · ${ago(sensor.lastMotionTime)}`}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* 3. Ring Smoke & CO Acoustic Listener */}
-      <div className="space-y-2 pt-1">
-        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>Ring Smoke & CO Listener</span>
-          <span className="text-slate-500 text-[10px]">UL Acoustic Frequency</span>
-        </div>
-
-        <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
-          smokeCO.smokeAlarmDetected || smokeCO.coAlarmDetected
-            ? 'bg-red-950/60 border-red-500 animate-pulse text-red-200'
-            : 'bg-slate-800/60 border-slate-700 text-slate-300'
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${smokeCO.smokeAlarmDetected ? 'bg-red-500 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'}`}>
-              <Flame className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-white">Ring Smoke & CO Listener (Kitchen)</h4>
-                <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-900 border border-slate-800 text-cyan-300">
-                  Battery: {smokeCO.battery}%
-                </span>
+      {/* Smoke & CO */}
+      <section className="space-y-2.5">
+        <div className="eyebrow">Smoke &amp; CO listener</div>
+        <div className={`rounded-2xl border p-4 ${alarm ? 'border-ember bg-ember-wash' : 'border-bark-line bg-parchment-paper shadow-leaf'}`}>
+          <div className="flex items-start gap-3">
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${alarm ? 'bg-ember text-parchment-paper animate-breathe' : 'bg-parchment-deep text-bark-soft'}`}>
+              <SmokeIcon className="w-[18px] h-[18px]" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className={`text-[14.5px] font-semibold ${alarm ? 'text-ember-deep' : ''}`}>Kitchen smoke alarm</h3>
+                <span className="text-[12px] text-bark-mute">Battery {smokeCO.battery}%</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                {smokeCO.smokeAlarmDetected
-                  ? '🚨 UL Smoke Siren Detected! Syncing with Kitchen Stove Sentinel'
-                  : 'Standing by: Listening for T3 Smoke & T4 CO audio temporal patterns'}
+              <p className={`mt-0.5 text-[13px] ${alarm ? 'text-ember-deep' : 'text-bark-soft'}`}>
+                {alarm
+                  ? 'The smoke alarm is sounding. The camera has turned to the stove.'
+                  : 'Listening for the smoke and CO alarm patterns, so even an old alarm can call for help.'}
               </p>
+              <div className="mt-2.5 flex justify-end">
+                <button
+                  onClick={onSimulateSmokeAlarm}
+                  className={alarm ? 'btn-ghost !px-3 !py-1 !text-[12px]' : 'btn !px-3 !py-1 !text-[12px] border border-ember/40 text-ember-deep hover:bg-ember-wash'}
+                >
+                  {alarm ? 'Reset alarm' : 'Try: smoke alarm'}
+                </button>
+              </div>
             </div>
           </div>
-
-          <button
-            onClick={onSimulateSmokeAlarm}
-            className="px-3 py-1.5 rounded-lg bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-semibold text-[11px] transition shrink-0 active:scale-95"
-          >
-            {smokeCO.smokeAlarmDetected ? 'Reset Sensor' : 'Test Smoke Alarm'}
-          </button>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

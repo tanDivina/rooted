@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { CareIncident } from '@/lib/types/care'
-import { FallIcon, KettleIcon, VoiceIcon, SignalOffIcon, SproutIcon, CheckIcon, PageIcon, CloseIcon } from './icons'
+import { FallIcon, KettleIcon, VoiceIcon, SignalOffIcon, SproutIcon, CheckIcon, PageIcon, CloseIcon, SmokeIcon, PillIcon, DoorIcon } from './icons'
 
 interface CaregiverTimelineProps {
   incidents: CareIncident[]
@@ -15,6 +15,9 @@ const KIND: Record<string, { Icon: (p: React.SVGProps<SVGSVGElement>) => JSX.Ele
   stove_unattended: { Icon: KettleIcon, tone: 'text-honey bg-honey-wash' },
   voice_distress: { Icon: VoiceIcon, tone: 'text-ember bg-ember-wash' },
   heartbeat_loss: { Icon: SignalOffIcon, tone: 'text-honey bg-honey-wash' },
+  smoke_co_alarm: { Icon: SmokeIcon, tone: 'text-ember bg-ember-wash' },
+  medication_missed: { Icon: PillIcon, tone: 'text-honey bg-honey-wash' },
+  night_wandering: { Icon: DoorIcon, tone: 'text-honey bg-honey-wash' },
 }
 const CALM = { Icon: SproutIcon, tone: 'text-moss bg-moss-wash' }
 

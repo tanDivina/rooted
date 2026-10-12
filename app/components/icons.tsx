@@ -138,3 +138,37 @@ export const AlertIcon = (p: IconProps) => (
 export const SproutIcon = (p: IconProps) => (
   <Svg {...p}><path d="M12 21v-9" /><path d="M12 12c0-4-3-6-7-6 0 4 3 6 7 6z" /><path d="M12 14c0-3.4 2.6-5.2 6-5.2 0 3.4-2.6 5.2-6 5.2z" /></Svg>
 )
+export const CompassIcon = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.2 13 13l-3.8 1.8L11 11z" /></Svg>
+)
+export const ChevronIcon = ({ dir = 'right', ...p }: IconProps & { dir?: 'up' | 'down' | 'left' | 'right' }) => {
+  const r = { right: 0, down: 90, left: 180, up: 270 }[dir]
+  return (
+    <Svg {...p}><path d="M9.5 6.5 15 12l-5.5 5.5" transform={`rotate(${r} 12 12)`} /></Svg>
+  )
+}
+export const RecenterIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><path d="M4.5 4.5v3.4h3.4" /><circle cx="12" cy="12" r="1.4" fill="currentColor" /></Svg>
+)
+export const ChairIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M6 11V7.5A2.5 2.5 0 0 1 8.5 5h7A2.5 2.5 0 0 1 18 7.5V11" /><path d="M4 11.5a1.5 1.5 0 0 1 3 0V14h10v-2.5a1.5 1.5 0 0 1 3 0V17H4z" /><path d="M6 17v2M18 17v2" /></Svg>
+)
+export const PillIcon = (p: IconProps) => (
+  <Svg {...p}><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)" /><path d="m9.6 8.6 4.8 6.8" /></Svg>
+)
+export const DoorIcon = ({ open, ...p }: IconProps & { open?: boolean }) => (
+  <Svg {...p}>
+    <path d="M5 20.5h14" />
+    <path d="M7 20.5V4.5h10v16" />
+    {open ? <path d="M7 4.5 13 6v15.5L7 20.5" /> : <circle cx="14.5" cy="12.5" r=".7" fill="currentColor" />}
+  </Svg>
+)
+export const FridgeIcon = (p: IconProps) => (
+  <Svg {...p}><rect x="6" y="3" width="12" height="18" rx="2.5" /><path d="M6 10h12M9 6v1.5M9 13v3" /></Svg>
+)
+export const SmokeIcon = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="9" r="5.5" /><circle cx="12" cy="9" r="1.6" /><path d="M8 18c1.2-1 2.8-1 4 0s2.8 1 4 0M6.5 21c1.6-1 3.4-1 5 0" /></Svg>
+)
+export const MotionIcon = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="2" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4" /><path d="M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" /></Svg>
+)

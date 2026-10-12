@@ -7,6 +7,9 @@ const ZONES: Record<string, string> = {
   voice_distress: 'Living room (camera audio)',
   heartbeat_loss: 'Whole home (camera offline)',
   routine_inactivity: 'Bedroom',
+  smoke_co_alarm: 'Kitchen',
+  medication_missed: 'Medicine cabinet',
+  night_wandering: 'Front door',
 }
 
 export async function POST(req: NextRequest) {
