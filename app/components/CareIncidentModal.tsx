@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { CareIncident, EscalationStatus } from '@/lib/types/care'
-import { ChimeIcon, FamilyIcon, HelpIcon, CheckIcon, PhoneIcon, AlertIcon, CloseIcon } from './icons'
+import { ChimeIcon, FamilyIcon, HelpIcon, CheckIcon, PhoneIcon, AlertIcon, CloseIcon, ShieldIcon } from './icons'
 
 interface CareIncidentModalProps {
   incident: CareIncident | null
@@ -185,14 +185,14 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-moss-wash text-moss ring-4 ring-moss/20">
             <CheckIcon className="h-8 w-8" />
           </div>
-          <h2 className="font-serif text-[26px] font-semibold text-bark">All Clear: You’re Safe</h2>
+          <h2 className="font-serif text-[26px] font-semibold text-bark">All clear. Glad you’re okay.</h2>
           <p className="text-[15px] leading-relaxed text-bark-soft max-w-md">
-            Emergency alert stood down. We sent an automated reassurance update to your family contacts noting you are safe.
+            The alert is stood down, and your family gets a short note that you’re safe.
           </p>
           <div className="w-full rounded-2xl bg-parchment p-4 text-left border border-bark-line/60 flex items-start gap-3">
-            <span className="text-xl">🛡️</span>
+            <ShieldIcon className="w-5 h-5 shrink-0 text-moss mt-0.5" />
             <div className="text-[13px] leading-relaxed text-bark-soft">
-              <strong className="text-bark font-semibold">Post-Dismissal Safety Check:</strong> The Ring Pan-Tilt camera is quietly verifying your upright movement for the next 60 seconds. If no movement occurs, it reaches out again.
+              <strong className="text-bark font-semibold">A quiet follow-up:</strong> for the next 60 seconds the camera looks for you up and moving. If it doesn’t see that, Rooted reaches out again.
             </div>
           </div>
         </div>
@@ -212,9 +212,9 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
           <div className="bg-ember px-7 py-5 text-parchment-paper">
             <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] opacity-90">
               <PhoneIcon className="w-4 h-4 animate-pulse" />
-              Emergency Dispatch In Progress
+              Calling for help
             </div>
-            <h2 className="mt-1 font-serif text-[26px] font-semibold leading-tight">Connecting With Caregivers & 911</h2>
+            <h2 className="mt-1 font-serif text-[26px] font-semibold leading-tight">Reaching your family and 911</h2>
           </div>
 
           <div className="flex flex-col gap-6 p-7">
@@ -247,10 +247,10 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
 
               <div className="flex flex-col gap-2">
                 <div className="text-[15px] font-medium text-bark leading-snug">
-                  Family contacts are being notified via SMS. 911 EMS Paramedic brief transmits in {graceRemaining}s.
+                  Your family is being told now. The paramedic brief goes to 911 in {graceRemaining}s.
                 </div>
                 <p className="text-[13px] text-bark-mute leading-relaxed">
-                  The Ring Pan-Tilt camera speaker is announcing the alert into the room. If this button was pressed accidentally, you can stand it down below with zero penalty.
+                  The camera speaker is letting the room know help is coming. Pressed it by accident? Stand it down below, no harm done.
                 </p>
               </div>
             </div>
@@ -262,7 +262,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                 className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-bark py-4 px-6 text-base font-bold text-parchment-paper shadow-lg transition hover:bg-bark/90 active:scale-[0.98]"
               >
                 <CloseIcon className="w-5 h-5 text-ember-wash" />
-                <span>CANCEL FALSE ALARM (I AM OKAY)</span>
+                <span>I’m okay, cancel</span>
               </button>
 
               <button
@@ -270,7 +270,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                 className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold text-ember-deep hover:bg-ember-wash/50 transition"
               >
                 <PhoneIcon className="w-3.5 h-3.5" />
-                Skip Countdown — Connect 911 Right Now
+                Don’t wait, call 911 now
               </button>
             </div>
           </div>
@@ -410,9 +410,9 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
             {/* Asymmetric Safety Ground-Truth Notice */}
             <div className="mt-2 flex items-center justify-between rounded-xl bg-parchment px-3.5 py-2 text-[11.5px] text-bark-soft border border-bark-line/50">
               <span className="flex items-center gap-1.5">
-                <span className="text-sm">🛡️</span>
+                <ShieldIcon className="w-4 h-4 shrink-0 text-moss" />
                 <span>
-                  <strong>Accidental-Proof:</strong> Single taps cannot dismiss alarms. 60s posture verification follows any cancellation.
+                  <strong>Hard to dismiss by accident:</strong> a single tap won’t cancel, and Rooted checks in for 60s after any cancel.
                 </span>
               </span>
             </div>

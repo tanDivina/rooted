@@ -138,6 +138,9 @@ export const AlertIcon = (p: IconProps) => (
 export const SproutIcon = (p: IconProps) => (
   <Svg {...p}><path d="M12 21v-9" /><path d="M12 12c0-4-3-6-7-6 0 4 3 6 7 6z" /><path d="M12 14c0-3.4 2.6-5.2 6-5.2 0 3.4-2.6 5.2-6 5.2z" /></Svg>
 )
+export const ShieldIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M12 3.2c2.6 1.6 5 2.3 7.2 2.4.2 6.6-2.3 11.6-7.2 14.4C7.1 17.2 4.6 12.2 4.8 5.6 7 5.5 9.4 4.8 12 3.2z" /><path d="M9 12.2l2.1 2.1 4-4.3" /></Svg>
+)
 export const CompassIcon = (p: IconProps) => (
   <Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M14.8 9.2 13 13l-3.8 1.8L11 11z" /></Svg>
 )
