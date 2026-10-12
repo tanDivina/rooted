@@ -48,7 +48,7 @@ export function Header({ connected, enabledCount, hasActiveAlert, alertTitle }: 
           </span>
           {enabledCount > 0 && (
             <span className="px-3 py-2 rounded-full border border-bark-line bg-parchment-paper text-bark-soft">
-              {enabledCount} roots watching
+              Watching for {enabledCount} things
             </span>
           )}
         </div>
