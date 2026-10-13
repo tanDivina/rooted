@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "FamilyEmail", "Effect": "Allow", "Action": ["ses:SendEmail", "ses:SendRawEmail"], "Resource": "*" },
+    { "Sid": "FamilySms", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "*" },
+    { "Sid": "ParamedicBrief", "Effect": "Allow", "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"], "Resource": "*" },
+    { "Sid": "HelpCallSpeech", "Effect": "Allow", "Action": ["transcribe:StartStreamTranscription"], "Resource": "*" }
+  ]
+}
