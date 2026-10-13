@@ -17,12 +17,20 @@ const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'
 
 // Landmark indices (MediaPipe Pose)
-const L_SHOULDER = 11, R_SHOULDER = 12, L_HIP = 23, R_HIP = 24
+const NOSE = 0, L_SHOULDER = 11, R_SHOULDER = 12, L_HIP = 23, R_HIP = 24, L_ANKLE = 27, R_ANKLE = 28
 const TRACKED = [0, 11, 12, 23, 24, 25, 26, 27, 28]
 
-// Tuning, in normalised image units (0..1 of frame height) and seconds
-const DROP_DISTANCE = 0.2      // hips dropping this far (of frame height)...
-const DROP_WITHIN_MS = 1500     // ...within this long is a sudden drop
+// Tuning. Distances are relative to the person's own standing height (nose to ankles),
+// so the same rules hold whether they are close to the camera or across the room.
+const DROP_FRACTION = 0.33     // hips dropping a third of standing height...
+const DROP_FRAME = 0.2        // until a standing height is known (never seen upright, in full): drop of the frame height
+const DROP_WITHIN_MS = 1500    // ...within this long is sudden (tipping over without a drop, as onto a sofa, is not)
+const FLOOR_GAP = 0.25         // hips within a quarter of standing height of the ankles: on the floor
+const SEATED_GAP = 0.4         // upright torso with hips this close to the ankles: sitting
+                               // (also how far up a body already on the floor may rise and still count as down)
+const LEGS_STRAIGHT = 0.4      // hips at least this far above the ankles: standing, so height can be learned
+const HIPS_STEADY = 0.05      // hips moving less than this (of standing height) over 0.5s: not sitting down or falling
+const ABOVE_SEAT = 0.1         // lying with hips this far above where they last sat: on furniture, not the floor
 const DROP_WINDOW_MS = 3000    // a sudden drop counts if it happened this recently
 const STILL_MOVEMENT = 0.03    // smoothed mean landmark movement over ~1s below this is "still"
                                // (pose landmarks jitter ~0.005-0.016 even on a frozen frame)
@@ -51,7 +59,8 @@ export class FallDetectionProcessor implements VideoProcessor {
 
   private posture: Posture = 'absent'
   private history: Sample[] = []
-  private uprightHipY: number | null = null
+  private standingHeight: number | null = null
+  private seatedHipY: number | null = null
   private lastDropAt = 0
   private downSince: number | null = null
   private stillSince: number | null = null
@@ -111,7 +120,8 @@ export class FallDetectionProcessor implements VideoProcessor {
   reset() {
     this.posture = 'absent'
     this.history = []
-    this.uprightHipY = null
+    this.standingHeight = null
+    this.seatedHipY = null
     this.lastDropAt = 0
     this.downSince = null
     this.stillSince = null
@@ -197,9 +207,24 @@ export class FallDetectionProcessor implements VideoProcessor {
     const ago = (ms: number) => this.history.find((s) => now - s.t <= ms) ?? this.history[0]
 
     const oneSecAgo = ago(1000)
-    const recentHighest = Math.min(...this.history.filter((s) => now - s.t <= DROP_WITHIN_MS).map((s) => s.hipY))
-    const dropSpeed = hips.y - recentHighest
-    if (dropSpeed > DROP_DISTANCE) this.lastDropAt = now
+
+    // Learn the person's standing height while they are clearly upright, legs straight and fully in view
+    // (an upright torso alone is not enough: sitting would shrink it)
+    const ankles = mid(L_ANKLE, R_ANKLE)
+    const anklesSeen = Math.min(lm[L_ANKLE].visibility ?? 1, lm[R_ANKLE].visibility ?? 1) > 0.5
+    if (torsoAngle < 20 && anklesSeen) {
+      const h = ankles.y - lm[NOSE].y
+      // ...and hips not on their way down (lowering into a chair looks upright with straight-ish legs)
+      const halfSecAgo = ago(500)
+      const steady = Math.abs(hips.y - halfSecAgo.hipY) < HIPS_STEADY * h
+      if (h > 0.05 && ankles.y - hips.y > LEGS_STRAIGHT * Math.max(h, this.standingHeight ?? 0) && steady)
+        this.standingHeight = this.standingHeight == null ? h : this.standingHeight * 0.9 + h * 0.1
+    }
+    const H = this.standingHeight
+
+    const recent = this.history.filter((s) => now - s.t <= DROP_WITHIN_MS)
+    const hipDrop = hips.y - Math.min(...recent.map((s) => s.hipY))
+    if (hipDrop > (H ? DROP_FRACTION * H : DROP_FRAME)) this.lastDropAt = now
 
     const movement =
       oneSecAgo.pts.reduce((sum, p, i) => sum + Math.hypot(p.x - lm[TRACKED[i]].x, p.y - lm[TRACKED[i]].y), 0) /
@@ -210,12 +235,12 @@ export class FallDetectionProcessor implements VideoProcessor {
     else if (!this.stillSince) this.stillSince = now
     const stillSec = this.stillSince ? Math.floor((now - this.stillSince) / 1000) : 0
 
-    // Remember where the hips sit when the person is upright
-    if (torsoAngle < 30) {
-      this.uprightHipY = this.uprightHipY == null ? hips.y : this.uprightHipY * 0.9 + hips.y * 0.1
-    }
-    const lowered = this.uprightHipY != null ? hips.y > this.uprightHipY + 0.1 : hips.y > 0.6
-    const down = torsoAngle > 55 && lowered
+    // On the floor: torso near flat and hips about level with the ankles. Once down, stay down
+    // until clearly up again, so a pose hovering near a threshold doesn't flicker.
+    const gap = ankles.y - hips.y
+    const wasDown = this.downSince != null
+    const lowered = H ? gap < (wasDown ? SEATED_GAP : FLOOR_GAP) * H : box.width > box.height * 1.2
+    const down = torsoAngle > (wasDown ? 40 : 55) && lowered
 
     let label = 'Up and moving'
     let color = '#5C6B37' // moss
@@ -253,7 +278,9 @@ export class FallDetectionProcessor implements VideoProcessor {
         label = 'Lying down'
         color = '#6B5242' // bark
         confidence = 0.8
-        if (stillSec >= LYING_STILL_SEC) {
+        // Hips still up at seat height (or higher): resting on a sofa or bed, not the floor
+        const onFurniture = H != null && this.seatedHipY != null && hips.y < this.seatedHipY + ABOVE_SEAT * H
+        if (stillSec >= LYING_STILL_SEC && !onFurniture) {
           this.fallTriggered = true
           this.posture = 'fall_detected'
           this.lastFallTimestamp = now
@@ -272,7 +299,8 @@ export class FallDetectionProcessor implements VideoProcessor {
         // Partly up but not upright yet: keep the alert state until they are clearly up
       } else {
         this.fallTriggered = false
-        const seated = this.uprightHipY != null && hips.y > this.uprightHipY + 0.06 && torsoAngle < 40
+        const seated = H != null && gap < SEATED_GAP * H && torsoAngle < 40
+        if (seated) this.seatedHipY = hips.y
         this.posture = seated ? 'sitting' : 'standing'
         label = seated ? 'Sitting down' : 'Up and moving'
         color = seated ? '#6B5242' : '#5C6B37'
