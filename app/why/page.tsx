@@ -68,7 +68,7 @@ const ROOTS = [
 ]
 
 const STEPS = [
-  { Icon: ChimeIcon, title: 'At home', body: 'A chime and a voice check. One “I’m okay” and it’s over.' },
+  { Icon: ChimeIcon, title: 'At home', body: 'A gentle chime in the home. One “I’m okay” and it’s over.' },
   { Icon: FamilyIcon, title: 'Family', body: 'No answer? A text and call to the caregiver.' },
   { Icon: HelpIcon, title: 'Emergency services', body: 'Still nothing? Dispatch, with a brief for paramedics.' },
 ]

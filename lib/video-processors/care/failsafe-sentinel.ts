@@ -25,7 +25,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
     secondsRemaining: 60,
     totalSeconds: 60,
     level: 1,
-    levelLabel: 'Level 1: In-Home Chime & Voice Verification',
+    levelLabel: 'Level 1: In-Home Chime Check',
     aborted: false,
     acknowledgedBy: null,
   }
@@ -122,7 +122,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
         this.escalationStatus.levelLabel = 'Level 2: Caregiver Cellular Push & SMS Blast'
       } else {
         this.escalationStatus.level = 1
-        this.escalationStatus.levelLabel = 'Level 1: In-Home Voice & Chime Verification'
+        this.escalationStatus.levelLabel = 'Level 1: In-Home Chime Check'
       }
     } else {
       // Timer expired -> Full dispatch

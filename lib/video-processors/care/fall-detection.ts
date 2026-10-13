@@ -74,6 +74,11 @@ export class FallDetectionProcessor implements VideoProcessor {
     this.onIncidentCallback = onIncident
   }
 
+  /** Whether the pose model has loaded and frames are being analysed. */
+  get ready(): boolean {
+    return this.landmarker != null
+  }
+
   /** Whether a person was seen in the last couple of seconds (used by the stove watch). */
   get personPresent(): boolean {
     return Date.now() - this.lastSeenAt < 2000

@@ -38,7 +38,7 @@ What drives families toward a move is usually fear of the fall nobody sees. [Abo
 ## What Rooted watches for: the four roots
 
 1. **A fall.** [MediaPipe Pose](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) runs in the browser on every frame of the Ring stream. A fall is the hips dropping sharply (a third of the person’s own standing height within 1.5 s, so it works near or far from the camera), then the torso flat and hips at floor level for 4 seconds of stillness. Lying down slowly counts as resting, and only raises a gentler alert after a minute still on the floor, not on a sofa or bed.
-   *Tested on the [UR Fall Detection Dataset](http://fenix.ur.edu.pl/~mkepski/ds/uf.html) (front camera, color only): 5–6 of 8 fall runs detected depending on the run, 0 alerts across 9 everyday clips (sitting, bending, lying down on purpose). Falls straight toward the camera are missed, because the body looks upright when foreshortened. Also tested on 6 generated wide-angle living-room clips: 3 of 3 falls (tripping on a rug, collapsing beside a chair, sliding down a wall) and 0 of 3 everyday moments (sitting on a sofa, lying down on it to read, picking something up). A small sample, not a clinical validation. The “Try a moment” fall uses generated cartoon footage the pose model can’t read, so that one button is scripted.*
+   *Tested on the [UR Fall Detection Dataset](http://fenix.ur.edu.pl/~mkepski/ds/uf.html) (front camera, color only): 5–6 of 8 fall runs detected depending on the run, 0 alerts across 9 everyday clips (sitting, bending, lying down on purpose). Falls straight toward the camera are missed, because the body looks upright when foreshortened. Also tested on 6 generated wide-angle living-room clips: 3 of 3 falls (tripping on a rug, collapsing beside a chair, sliding down a wall) and 0 of 3 everyday moments (sitting on a sofa, lying down on it to read, picking something up). A small sample, not a clinical validation. The “Try a moment” fall plays one of those generated clips through the same detector, so the alert you see is real detection (a scripted alert stands in only if the pose model can’t load, for example offline).*
 2. **A stove left on.** A burner on in the kitchen while nobody is there (scripted in the demo today; vision on the stove zone is in progress).
 3. **A call for help.** Phrases like “Help!” or “I fell!” (scripted in the demo today; speech recognition on the Ring stream’s audio track is in progress).
 4. **A quiet camera.** A missed heartbeat (Wi-Fi or power down) moves alerts onto a cellular backup.
@@ -74,7 +74,7 @@ Roots: in-browser vision & audio (fall heuristic, stove zone, keyword listener)
         ▼
 Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
         │  no answer
-        ├─► Step 1: in-home chime + voice
+        ├─► Step 1: in-home chime
         ├─► Step 2: caregiver SMS + call
         └─► Step 3: emergency dispatch + paramedic brief
 ```
@@ -122,7 +122,7 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 
 | Button | What happens |
 | :--- | :--- |
-| **A fall** | Raises a fall alert and starts the check-in countdown. Watch it climb from step 1 to step 3. |
+| **A fall** | Plays a living-room clip through the real pose detector: he collapses getting up from a chair, and after 4 s of stillness the fall alert and check-in countdown start. Watch it climb from step 1 to step 3. |
 | **Stove left on** | Raises a kitchen alert for a burner left on with nobody present. |
 | **A call for help** | Simulates hearing “Help me, I can’t get up!” through the camera. |
 | **Wi-Fi goes down** | Cuts the camera’s heartbeat; Rooted switches to the cellular backup. Click again to restore. |
@@ -141,7 +141,7 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 
 **Making it real (in progress):** vision on the stove zone, speech and smoke-alarm detection on the stream’s audio track, Ring contact and temperature sensors over webhooks, a real Ring Chime sound, family alerts through AWS, and a Bedrock-written paramedic brief. The 911 dispatch will always stay simulated: a hackathon app should never call emergency services on its own.
 
-The **Try a moment** buttons play generated footage of a living room, a kitchen and a porch (`scripts/generate_demo_videos.py`) through the same detectors, so the app works without a camera.
+The **Try a moment** buttons play generated footage through the same detectors, so the app works without a camera: an AI-generated living-room clip for the fall (made with Gemini Omni Flash), and drawn scenes of a kitchen and a porch (`scripts/generate_demo_videos.py`).
 
 ## Built during the hackathon
 

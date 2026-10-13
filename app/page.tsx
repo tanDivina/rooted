@@ -157,7 +157,7 @@ export default function Dashboard() {
     secondsRemaining: 45,
     totalSeconds: 45,
     level: 1,
-    levelLabel: 'Level 1: In-Home Voice & Chime Verification',
+    levelLabel: 'Level 1: In-Home Chime Check',
     aborted: false,
     acknowledgedBy: null,
   })
@@ -305,9 +305,10 @@ export default function Dashboard() {
   // Active demo video state
   const [activeVideoSrc, setActiveVideoSrc] = useState<string | null>(null)
 
-  // Simulated scenario triggers
-  // The fall clip plays once: a walk, a fall at ~3.5s, then stillness. The alert waits
-  // until the person has been still on the floor for ~4s, as it would on a live camera.
+  // Scenario triggers
+  // The fall clip is real-looking footage that runs through the real pose detector: he stands up
+  // from a chair, collapses at ~3s and stays down, so the alert fires after ~4s of stillness.
+  // Only if the pose model couldn't load (offline, say) does a scripted alert stand in.
   const fallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const clearFallTimer = () => {
     if (fallTimerRef.current) clearTimeout(fallTimerRef.current)
@@ -317,10 +318,10 @@ export default function Dashboard() {
 
   const triggerFallScenario = () => {
     clearFallTimer()
-    setActiveVideoSrc('/videos/fall-scenario.mp4')
+    setActiveVideoSrc('/videos/fall-living-room.mp4')
     if (videoRef.current) {
       videoRef.current.srcObject = null
-      videoRef.current.src = '/videos/fall-scenario.mp4'
+      videoRef.current.src = '/videos/fall-living-room.mp4'
       videoRef.current.loop = false
       videoRef.current.play().catch(console.error)
     }
@@ -329,8 +330,8 @@ export default function Dashboard() {
     fallDetectionProcessor.reset()
     fallTimerRef.current = setTimeout(() => {
       fallTimerRef.current = null
-      fallDetectionProcessor.triggerSimulatedFall()
-    }, 7500)
+      if (!fallDetectionProcessor.ready) fallDetectionProcessor.triggerSimulatedFall()
+    }, 9000)
   }
 
   const triggerStoveScenario = () => {

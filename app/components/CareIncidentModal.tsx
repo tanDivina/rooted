@@ -12,7 +12,7 @@ interface CareIncidentModalProps {
 }
 
 const STEPS = [
-  { level: 1, Icon: ChimeIcon, title: 'At home', body: 'A gentle chime and a voice check through the camera' },
+  { level: 1, Icon: ChimeIcon, title: 'At home', body: 'A gentle chime in the home, and a moment to answer' },
   { level: 2, Icon: FamilyIcon, title: 'Family', body: 'Text and call to the caregiver, over cellular if needed' },
   { level: 3, Icon: HelpIcon, title: 'Emergency services', body: 'Dispatch with a clinical brief for paramedics' },
 ] as const
