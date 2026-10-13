@@ -37,7 +37,8 @@ What drives families toward a move is usually fear of the fall nobody sees. [Abo
 
 ## What Rooted watches for: the four roots
 
-1. **A fall.** A sudden drop to floor level followed by stillness, read from the live Ring stream in the browser (a lightweight shape-and-motion heuristic today; a pose model is the planned upgrade).
+1. **A fall.** [MediaPipe Pose](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) runs in the browser on every frame of the Ring stream. A fall is the hips dropping sharply (a fifth of the frame height within 1.5 s) with the torso tipping toward horizontal, then 4 seconds of stillness on the floor. Lying down slowly counts as resting, and only raises a gentler alert after a minute still on the floor.
+   *Tested on the [UR Fall Detection Dataset](http://fenix.ur.edu.pl/~mkepski/ds/uf.html) (front camera): 7 of 8 fall runs detected, 0 alerts across 9 everyday clips (sitting, bending, lying down on purpose). A small sample, not a clinical validation. The “Try a moment” fall uses generated cartoon footage the pose model can’t read, so that one button is scripted.*
 2. **A stove left on.** A burner on in the kitchen while nobody is there (scripted in the demo today; vision on the stove zone is in progress).
 3. **A call for help.** Phrases like “Help!” or “I fell!” (scripted in the demo today; speech recognition on the Ring stream’s audio track is in progress).
 4. **A quiet camera.** A missed heartbeat (Wi-Fi or power down) moves alerts onto a cellular backup.
@@ -134,11 +135,11 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 | Real, against the Ring API (AVA v1) | Simulated for the demo |
 | :--- | :--- |
 | Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Stove and call-for-help detections (scripted triggers) |
-| Live video over WebRTC (WHEP sessions), with the fall detector running on each frame | Contact, motion and smoke/CO sensor events |
+| Live video over WebRTC (WHEP sessions), with the MediaPipe Pose fall detector running on each frame | Contact, motion and smoke/CO sensor events |
 | Playground access tokens and OAuth refresh-token flow | Pan-Tilt motor control (not in the public API) |
 | Signed webhooks streamed to the dashboard over SSE | In-home chime, family alerts and the 911 dispatch |
 
-**Making it real (in progress):** a pose model for falls, vision on the stove zone, speech and smoke-alarm detection on the stream’s audio track, Ring contact and temperature sensors over webhooks, a real Ring Chime sound, family alerts through AWS, and a Bedrock-written paramedic brief. The 911 dispatch will always stay simulated: a hackathon app should never call emergency services on its own.
+**Making it real (in progress):** vision on the stove zone, speech and smoke-alarm detection on the stream’s audio track, Ring contact and temperature sensors over webhooks, a real Ring Chime sound, family alerts through AWS, and a Bedrock-written paramedic brief. The 911 dispatch will always stay simulated: a hackathon app should never call emergency services on its own.
 
 The **Try a moment** buttons play generated footage of a living room, a kitchen and a porch (`scripts/generate_demo_videos.py`) through the same detectors, so the app works without a camera.
 

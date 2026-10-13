@@ -1,21 +1,43 @@
 import { VideoProcessor, ProcessorResult, BoundingBox } from '../types'
+import type { PoseLandmarker, NormalizedLandmark } from '@mediapipe/tasks-vision'
+
+type Posture = 'absent' | 'standing' | 'sitting' | 'lying' | 'horizontal_floor' | 'fall_detected'
 
 export interface FallDetectionData {
-  posture: 'standing' | 'sitting' | 'horizontal_floor' | 'fall_detected'
+  posture: Posture
   confidence: number
   immobilitySeconds: number
-  centroidY: number
-  aspectRatio: number
+  torsoAngle: number
+  hipY: number
   lastFallTimestamp: number | null
 }
 
+const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm'
+const MODEL_URL =
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'
+
+// Landmark indices (MediaPipe Pose)
+const L_SHOULDER = 11, R_SHOULDER = 12, L_HIP = 23, R_HIP = 24
+const TRACKED = [0, 11, 12, 23, 24, 25, 26, 27, 28]
+
+// Tuning, in normalised image units (0..1 of frame height) and seconds
+const DROP_DISTANCE = 0.2      // hips dropping this far (of frame height)...
+const DROP_WITHIN_MS = 1500     // ...within this long is a sudden drop
+const DROP_WINDOW_MS = 3000    // a sudden drop counts if it happened this recently
+const STILL_MOVEMENT = 0.03    // smoothed mean landmark movement over ~1s below this is "still"
+                               // (pose landmarks jitter ~0.005-0.016 even on a frozen frame)
+const FALL_STILL_SEC = 4       // still on the floor this long after a sudden drop: a fall
+const LYING_STILL_SEC = 60     // still on the floor this long without a drop: also worth asking
+
+interface Sample { t: number; hipY: number; pts: { x: number; y: number }[] }
+
 /**
  * Fall & Slip Detection Processor for Ring Cameras
- * 
- * A lightweight shape-and-motion heuristic (not a pose model): it boxes the
- * foreground, then watches the box's aspect ratio, how fast its centre drops,
- * and how long it stays still near the floor. A pose model such as MediaPipe
- * Pose is the natural upgrade.
+ *
+ * Runs MediaPipe Pose Landmarker in the browser on each frame of the Ring stream.
+ * A fall is a sudden drop of the hips with the torso tipping toward horizontal,
+ * followed by stillness near the floor. Lying down slowly is treated as resting,
+ * and only raises a (gentler) alert after a minute of stillness on the floor.
  */
 export class FallDetectionProcessor implements VideoProcessor {
   id = 'care-fall-detection'
@@ -23,21 +45,53 @@ export class FallDetectionProcessor implements VideoProcessor {
   description = 'Notices sudden falls, slips and stillness on the floor'
   enabled = true
 
-  private posture: 'standing' | 'sitting' | 'horizontal_floor' | 'fall_detected' = 'standing'
-  private floorContactStartTime: number | null = null
-  private lastCentroidY = 0.4
-  private lastCentroidTimestamp = Date.now()
+  private landmarker: PoseLandmarker | null = null
+  private loading: Promise<void> | null = null
+  private lastTs = 0
+
+  private posture: Posture = 'absent'
+  private history: Sample[] = []
+  private uprightHipY: number | null = null
+  private lastDropAt = 0
+  private downSince: number | null = null
+  private stillSince: number | null = null
+  private movementEma = 0
   private fallTriggered = false
+  private lastFallTimestamp: number | null = null
+  private lastSeenAt = 0
   private onIncidentCallback?: (incident: any) => void
 
   constructor(onIncident?: (incident: any) => void) {
     this.onIncidentCallback = onIncident
   }
 
+  /** Whether a person was seen in the last couple of seconds (used by the stove watch). */
+  get personPresent(): boolean {
+    return Date.now() - this.lastSeenAt < 2000
+  }
+
   async init(): Promise<void> {
-    this.posture = 'standing'
-    this.floorContactStartTime = null
-    this.fallTriggered = false
+    if (typeof window === 'undefined' || this.landmarker) return
+    if (!this.loading) {
+      this.loading = (async () => {
+        const { FilesetResolver, PoseLandmarker } = await import('@mediapipe/tasks-vision')
+        const fileset = await FilesetResolver.forVisionTasks(WASM_URL)
+        const options = (delegate: 'GPU' | 'CPU') => ({
+          baseOptions: { modelAssetPath: MODEL_URL, delegate },
+          runningMode: 'VIDEO' as const,
+          numPoses: 1,
+        })
+        try {
+          this.landmarker = await PoseLandmarker.createFromOptions(fileset, options('GPU'))
+        } catch {
+          this.landmarker = await PoseLandmarker.createFromOptions(fileset, options('CPU'))
+        }
+      })().catch((err) => {
+        console.error('[FallDetection] Pose model failed to load:', err)
+        this.loading = null
+      })
+    }
+    await this.loading
   }
 
   setIncidentCallback(cb: (incident: any) => void) {
@@ -49,27 +103,34 @@ export class FallDetectionProcessor implements VideoProcessor {
    */
   triggerSimulatedFall() {
     this.posture = 'fall_detected'
-    this.floorContactStartTime = Date.now() - 4000
     this.fallTriggered = true
-    if (this.onIncidentCallback) {
-      this.onIncidentCallback({
-        id: `fall-${Date.now()}`,
-        type: 'fall_detected',
-        severity: 'critical',
-        timestamp: Date.now(),
-        title: 'A fall in the living room',
-        description: 'Went down to the floor and hasn’t moved for more than 4 seconds.',
-        confidence: 0.96,
-        resolved: false,
-        escalationLevel: 1,
-      })
-    }
+    this.lastFallTimestamp = Date.now()
+    this.raise('A fall in the living room', 'Went down to the floor and hasn’t moved for more than 4 seconds.', 0.96)
   }
 
   reset() {
-    this.posture = 'standing'
-    this.floorContactStartTime = null
+    this.posture = 'absent'
+    this.history = []
+    this.uprightHipY = null
+    this.lastDropAt = 0
+    this.downSince = null
+    this.stillSince = null
+    this.movementEma = 0
     this.fallTriggered = false
+  }
+
+  private raise(title: string, description: string, confidence: number) {
+    this.onIncidentCallback?.({
+      id: `fall-${Date.now()}`,
+      type: 'fall_detected',
+      severity: 'critical',
+      timestamp: Date.now(),
+      title,
+      description,
+      confidence,
+      resolved: false,
+      escalationLevel: 1,
+    })
   }
 
   async process(
@@ -77,132 +138,198 @@ export class FallDetectionProcessor implements VideoProcessor {
     canvas: HTMLCanvasElement,
     video: HTMLVideoElement
   ): Promise<ProcessorResult | null> {
-    const { width, height } = frame
     const now = Date.now()
+    if (!this.landmarker) {
+      if (!this.loading) this.init()
+      return null
+    }
+    if (video.readyState < 2) return null
 
-    // Extract movement and vertical energy from frame
-    // We analyze the lower bounding region of active foreground pixels
-    let minX = width, maxX = 0, minY = height, maxY = 0
-    let totalForegroundPixels = 0
+    // detectForVideo needs strictly increasing timestamps
+    const ts = Math.max(performance.now(), this.lastTs + 1)
+    this.lastTs = ts
+    const result = this.landmarker.detectForVideo(video, ts)
+    const lm: NormalizedLandmark[] | undefined = result.landmarks?.[0]
 
-    // Sample pixels across grid to detect foreground presence
-    const data = frame.data
-    const step = 8
-    for (let y = 0; y < height; y += step) {
-      for (let x = 0; x < width; x += step) {
-        const idx = (y * width + x) * 4
-        // Check pixel luminance variance
-        const lum = (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114)
-        if (lum > 40 && lum < 220) {
-          totalForegroundPixels++
-          if (x < minX) minX = x
-          if (x > maxX) maxX = x
-          if (y < minY) minY = y
-          if (y > maxY) maxY = y
+    const { width, height } = frame
+
+    if (!lm) {
+      // Pose models often lose a body lying on the floor. If the person went down suddenly
+      // and then vanished in place, nobody saw them get up: treat that as stillness.
+      if (this.posture === 'horizontal_floor' && this.downSince) {
+        const lostSec = Math.floor((now - (this.stillSince ?? this.downSince)) / 1000)
+        if (lostSec >= FALL_STILL_SEC + 1) {
+          this.fallTriggered = true
+          this.posture = 'fall_detected'
+          this.lastFallTimestamp = now
+          this.raise(
+            'A fall in the living room',
+            `Went down suddenly and hasn’t been seen moving for ${lostSec} seconds.`,
+            0.85
+          )
         }
+        return this.result(now, [], `On the floor · ${lostSec}s`, lostSec)
       }
+      if (!this.downSince) this.posture = 'absent'
+      return this.result(now, [], 'Nobody in view', 0)
+    }
+    this.lastSeenAt = now
+
+    const mid = (a: number, b: number) => ({ x: (lm[a].x + lm[b].x) / 2, y: (lm[a].y + lm[b].y) / 2 })
+    const shoulders = mid(L_SHOULDER, R_SHOULDER)
+    const hips = mid(L_HIP, R_HIP)
+    // 0° = upright, 90° = lying flat
+    const torsoAngle =
+      (Math.atan2(Math.abs(hips.x - shoulders.x) * (width / height), Math.abs(hips.y - shoulders.y)) * 180) / Math.PI
+
+    const visible = lm.filter((p) => (p.visibility ?? 1) > 0.5)
+    const xs = visible.map((p) => p.x), ys = visible.map((p) => p.y)
+    const box = {
+      x: Math.min(...xs) * width,
+      y: Math.min(...ys) * height,
+      width: (Math.max(...xs) - Math.min(...xs)) * width,
+      height: (Math.max(...ys) - Math.min(...ys)) * height,
     }
 
-    const boxWidth = Math.max(120, maxX - minX)
-    const boxHeight = Math.max(80, maxY - minY)
-    const normalizedY = (minY + boxHeight / 2) / height
-    const aspectRatio = boxWidth / Math.max(1, boxHeight) // > 1.2 means wide/horizontal
+    // History for drop speed and stillness
+    this.history.push({ t: now, hipY: hips.y, pts: TRACKED.map((i) => ({ x: lm[i].x, y: lm[i].y })) })
+    this.history = this.history.filter((s) => now - s.t <= 3000)
+    const ago = (ms: number) => this.history.find((s) => now - s.t <= ms) ?? this.history[0]
 
-    // Centroid velocity
-    const dt = Math.max(0.05, (now - this.lastCentroidTimestamp) / 1000)
-    const dy = (normalizedY - this.lastCentroidY) / dt
-    this.lastCentroidY = normalizedY
-    this.lastCentroidTimestamp = now
+    const oneSecAgo = ago(1000)
+    const recentHighest = Math.min(...this.history.filter((s) => now - s.t <= DROP_WITHIN_MS).map((s) => s.hipY))
+    const dropSpeed = hips.y - recentHighest
+    if (dropSpeed > DROP_DISTANCE) this.lastDropAt = now
 
-    // State machine for posture & fall detection
-    let immobilitySec = 0
-    let color = '#5C6B37' // moss: all well
-    let statusLabel = 'Up and moving'
-    let confidence = 0.94
+    const movement =
+      oneSecAgo.pts.reduce((sum, p, i) => sum + Math.hypot(p.x - lm[TRACKED[i]].x, p.y - lm[TRACKED[i]].y), 0) /
+      TRACKED.length
+    this.movementEma = this.movementEma * 0.6 + movement * 0.4
+    const still = this.movementEma < STILL_MOVEMENT
+    if (!still) this.stillSince = null
+    else if (!this.stillSince) this.stillSince = now
+    const stillSec = this.stillSince ? Math.floor((now - this.stillSince) / 1000) : 0
 
-    if (this.fallTriggered || (aspectRatio > 1.35 && normalizedY > 0.6)) {
-      // Person is horizontal and close to floor level
-      if (!this.floorContactStartTime) {
-        this.floorContactStartTime = now
-      }
-      immobilitySec = Math.floor((now - this.floorContactStartTime) / 1000)
+    // Remember where the hips sit when the person is upright
+    if (torsoAngle < 30) {
+      this.uprightHipY = this.uprightHipY == null ? hips.y : this.uprightHipY * 0.9 + hips.y * 0.1
+    }
+    const lowered = this.uprightHipY != null ? hips.y > this.uprightHipY + 0.1 : hips.y > 0.6
+    const down = torsoAngle > 55 && lowered
 
-      if (immobilitySec >= 3 || this.fallTriggered) {
+    let label = 'Up and moving'
+    let color = '#5C6B37' // moss
+    let confidence = 0.9
+
+    if (down) {
+      if (!this.downSince) this.downSince = now
+      const suddenly = now - this.lastDropAt < DROP_WINDOW_MS || this.posture === 'horizontal_floor'
+
+      if (this.fallTriggered) {
         this.posture = 'fall_detected'
-        color = '#A8432B' // ember: a fall
-        statusLabel = `A fall · still for ${immobilitySec}s`
-        confidence = 0.98
-
-        // Fire incident once upon threshold crossing
-        if (!this.fallTriggered) {
+        label = `A fall · still for ${stillSec}s`
+        color = '#A8432B'
+        confidence = 0.95
+      } else if (suddenly) {
+        this.posture = 'horizontal_floor'
+        label = `On the floor · ${stillSec}s`
+        color = '#B7791F' // honey
+        confidence = 0.85
+        if (stillSec >= FALL_STILL_SEC) {
           this.fallTriggered = true
-          if (this.onIncidentCallback) {
-            this.onIncidentCallback({
-              id: `fall-${now}`,
-              type: 'fall_detected',
-              severity: 'critical',
-              timestamp: now,
-              title: 'A fall in the living room',
-              description: `Went down to the floor and hasn’t moved for ${immobilitySec}s (body ratio ${aspectRatio.toFixed(2)}).`,
-              confidence: 0.98,
-              resolved: false,
-              escalationLevel: 1,
-            })
-          }
+          this.posture = 'fall_detected'
+          this.lastFallTimestamp = now
+          label = `A fall · still for ${stillSec}s`
+          color = '#A8432B'
+          confidence = 0.95
+          this.raise(
+            'A fall in the living room',
+            `Went down suddenly and hasn’t moved for ${stillSec} seconds.`,
+            confidence
+          )
         }
       } else {
-        this.posture = 'horizontal_floor'
-        color = '#B7791F' // honey: watching closely
-        statusLabel = `On the floor · ${immobilitySec}s`
-        confidence = 0.82
+        this.posture = 'lying'
+        label = 'Lying down'
+        color = '#6B5242' // bark
+        confidence = 0.8
+        if (stillSec >= LYING_STILL_SEC) {
+          this.fallTriggered = true
+          this.posture = 'fall_detected'
+          this.lastFallTimestamp = now
+          label = `Still on the floor · ${stillSec}s`
+          color = '#A8432B'
+          this.raise(
+            'Still on the floor',
+            `Has been lying still low in the room for over a minute.`,
+            0.8
+          )
+        }
       }
-    } else if (normalizedY > 0.55 && aspectRatio > 0.8) {
-      this.posture = 'sitting'
-      this.floorContactStartTime = null
-      color = '#6B5242' // bark: resting
-      statusLabel = 'Sitting down'
-      confidence = 0.91
     } else {
-      this.posture = 'standing'
-      this.floorContactStartTime = null
-      this.fallTriggered = false
-      color = '#5C6B37' // moss: all well
-      statusLabel = 'Up and moving'
-      confidence = 0.95
+      this.downSince = null
+      if (this.posture === 'fall_detected' && torsoAngle > 35) {
+        // Partly up but not upright yet: keep the alert state until they are clearly up
+      } else {
+        this.fallTriggered = false
+        const seated = this.uprightHipY != null && hips.y > this.uprightHipY + 0.06 && torsoAngle < 40
+        this.posture = seated ? 'sitting' : 'standing'
+        label = seated ? 'Sitting down' : 'Up and moving'
+        color = seated ? '#6B5242' : '#5C6B37'
+      }
     }
 
     // Only outline the person once something needs attention; a calm room stays clean
     const noticing = this.posture === 'fall_detected' || this.posture === 'horizontal_floor'
-    const boundingBoxes: BoundingBox[] = !noticing ? [] : [
-      {
-        x: Math.max(20, minX),
-        y: Math.max(20, minY),
-        width: Math.min(width - 40, boxWidth),
-        height: Math.min(height - 40, boxHeight),
-        label: statusLabel,
-        color,
-        confidence,
-      },
-    ]
+    const pad = 16
+    const boxes: BoundingBox[] = noticing
+      ? [{
+          x: Math.max(0, box.x - pad),
+          y: Math.max(0, box.y - pad),
+          width: Math.min(width, box.width + pad * 2),
+          height: Math.min(height, box.height + pad * 2),
+          label,
+          color,
+          confidence,
+        }]
+      : []
 
+    return this.result(now, boxes, label, stillSec, torsoAngle, hips.y, confidence)
+  }
+
+  private result(
+    now: number,
+    boundingBoxes: BoundingBox[],
+    status: string,
+    immobilitySeconds: number,
+    torsoAngle = 0,
+    hipY = 0,
+    confidence = 0
+  ): ProcessorResult {
+    const data: FallDetectionData & { status: string } = {
+      posture: this.posture,
+      confidence,
+      immobilitySeconds,
+      torsoAngle: Math.round(torsoAngle),
+      hipY: Number(hipY.toFixed(2)),
+      lastFallTimestamp: this.lastFallTimestamp,
+      status,
+    }
     return {
       id: `fall-res-${now}`,
       processorId: this.id,
       timestamp: now,
       boundingBoxes,
-      data: {
-        posture: this.posture,
-        immobilitySeconds: immobilitySec,
-        aspectRatio: Number(aspectRatio.toFixed(2)),
-        velocityDown: Number(dy.toFixed(2)),
-        status: statusLabel,
-      },
+      data,
       message: this.posture === 'fall_detected' ? 'Emergency countdown initiated' : undefined,
     }
   }
 
   async destroy(): Promise<void> {
     this.reset()
+    this.landmarker?.close()
+    this.landmarker = null
+    this.loading = null
   }
 }
 

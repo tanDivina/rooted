@@ -172,6 +172,11 @@ export default function Dashboard() {
     failSafeSentinelProcessor.armDeadMansSwitch(incident)
   }, [])
 
+  // Load the pose model up front, so it is ready before the first frame that matters
+  useEffect(() => {
+    fallDetectionProcessor.init()
+  }, [])
+
   // Wire processor incident callbacks
   useEffect(() => {
     fallDetectionProcessor.setIncidentCallback(handleNewIncident)
@@ -560,7 +565,7 @@ export default function Dashboard() {
           />
 
           <div className="flex items-center justify-between px-2 text-[12px] text-bark-mute">
-            <span>Ring Partner API · WebRTC (WHEP) · on-device detection</span>
+            <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
             <span>~120 ms · 1080p · 30 fps</span>
           </div>
         </section>
