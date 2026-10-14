@@ -172,9 +172,10 @@ export default function Dashboard() {
     failSafeSentinelProcessor.armDeadMansSwitch(incident)
   }, [])
 
-  // Load the pose model up front, so it is ready before the first frame that matters
+  // Load the pose and speech models up front, so they are ready before the first frame that matters
   useEffect(() => {
     fallDetectionProcessor.init()
+    voiceDistressProcessor.init()
   }, [])
 
   // Wire processor incident callbacks
@@ -256,6 +257,11 @@ export default function Dashboard() {
 
   // Custom hooks
   const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId })
+
+  // A live Ring stream: listen to its audio track for calls for help
+  useEffect(() => {
+    if (streamActive && videoRef.current) voiceDistressProcessor.listenTo(videoRef.current)
+  }, [streamActive])
   const { events, connected } = useEventStream({})
   const { processors, results, toggleProcessor, enabledCount } = useVideoProcessing({
     video: videoRef.current,
@@ -366,9 +372,26 @@ export default function Dashboard() {
     stoveHazardProcessor.triggerSimulatedHazard()
   }
 
+  // The call-for-help clip shows an empty room: she has fallen out of view, in the hallway,
+  // and the camera hears her. Whisper listens to the clip's audio on-device.
   const triggerVoiceScenario = () => {
     clearFallTimer()
-    voiceDistressProcessor.triggerSimulatedDistress('Help me, I can’t get up!')
+    setActiveVideoSrc('/videos/call-for-help.mp4')
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+      videoRef.current.src = '/videos/call-for-help.mp4'
+      videoRef.current.loop = false
+      voiceDistressProcessor.listenTo(videoRef.current) // inside the click, so audio may start
+      videoRef.current.play().catch(console.error)
+    }
+    setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 15, currentPreset: 'Living Room (Listening)' }))
+    stoveHazardProcessor.reset()
+    fallDetectionProcessor.reset()
+    voiceDistressProcessor.reset()
+    fallTimerRef.current = setTimeout(() => {
+      fallTimerRef.current = null
+      if (!voiceDistressProcessor.ready) voiceDistressProcessor.triggerSimulatedDistress()
+    }, 9000)
   }
 
   const toggleOfflineSimulation = () => {
