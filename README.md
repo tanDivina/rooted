@@ -139,7 +139,7 @@ We built Rooted without any Ring hardware, so nothing here has run against a rea
 | MediaPipe Pose fall detector (tested on the UR Fall dataset and generated living-room clips; the “A fall” moment runs it live) | Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Stove detection (scripted trigger) |
 | Call-for-help listener: Whisper on-device on the audio track (English tested on a generated clip; the “A call for help” moment runs it live) | Live video over WebRTC (WHEP sessions), feeding the same detectors | Contact, motion and smoke/CO sensor events |
 | Check-in countdown and three-step escalation | | |
-| Family text (Amazon SNS) and email (Amazon SES) at step 2 | Playground access tokens and the OAuth refresh-token flow | In-home Ring Chime |
+| Family email (Amazon SES) at step 2 | Playground access tokens and the OAuth refresh-token flow; the family text (Amazon SNS), which sends but hasn’t reached our test phone yet | In-home Ring Chime |
 | Paramedic brief and family message written by Claude on Amazon Bedrock (template fallback offline) | Signed webhooks streamed to the dashboard over SSE | Pan-Tilt motor control (not in the public API) |
 | | | The 911 dispatch, always: a hackathon app should never call emergency services on its own |
 
