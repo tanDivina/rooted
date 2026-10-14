@@ -145,7 +145,7 @@ We built Rooted without any Ring hardware, so nothing here has run against a rea
 
 **Next:** vision on the stove zone, smoke-alarm beep detection on the stream’s audio track, Ring sensors over webhooks, a real Ring Chime sound, and a first run on real Ring hardware.
 
-The **Try a moment** buttons play generated footage through the same detectors, so the app works without a camera: an AI-generated living-room clip for the fall (made with Gemini Omni Flash), and drawn scenes of a kitchen and a porch (`scripts/generate_demo_videos.py`).
+The **Try a moment** buttons play generated footage through the same detectors, so the app works without a camera: AI-generated clips made with Gemini Omni Flash for the fall, the call for help (with a generated voice) and the stove left on. The people and voices in them are generated, not real.
 
 ## Built during the hackathon
 

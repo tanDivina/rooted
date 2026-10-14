@@ -360,10 +360,10 @@ export default function Dashboard() {
 
   const triggerStoveScenario = () => {
     clearFallTimer()
-    setActiveVideoSrc('/videos/stove-scenario.mp4')
+    setActiveVideoSrc('/videos/stove-kitchen.mp4')
     if (videoRef.current) {
       videoRef.current.srcObject = null
-      videoRef.current.src = '/videos/stove-scenario.mp4'
+      videoRef.current.src = '/videos/stove-kitchen.mp4'
       videoRef.current.loop = true
       videoRef.current.play().catch(console.error)
     }
