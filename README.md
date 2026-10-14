@@ -126,20 +126,23 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 | **Stove left on** | Raises a kitchen alert for a burner left on with nobody present. |
 | **A call for help** | Simulates hearing “Help me, I can’t get up!” through the camera. |
 | **Wi-Fi goes down** | Cuts the camera’s heartbeat; Rooted switches to the cellular backup. Click again to restore. |
-| **Connect a Ring camera** | Paste a Ring Playground token to stream your camera live over WebRTC. |
+| **Connect a Ring camera** | Paste a Ring Playground token to stream your camera live over WebRTC (written to the API docs; not yet tried on a device). |
 
 ---
 
 ## What’s real and what’s simulated
 
-| Real, against the Ring API (AVA v1) | Simulated for the demo |
-| :--- | :--- |
-| Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Stove and call-for-help detections (scripted triggers) |
-| Live video over WebRTC (WHEP sessions), with the MediaPipe Pose fall detector running on each frame | Contact, motion and smoke/CO sensor events |
-| Playground access tokens and OAuth refresh-token flow | Pan-Tilt motor control (not in the public API) |
-| Signed webhooks streamed to the dashboard over SSE | In-home chime, family alerts and the 911 dispatch |
+We built Rooted without any Ring hardware, so nothing here has run against a real camera yet. The table says exactly where each piece stands.
 
-**Making it real (in progress):** vision on the stove zone, speech and smoke-alarm detection on the stream’s audio track, Ring contact and temperature sensors over webhooks, a real Ring Chime sound, family alerts through AWS, and a Bedrock-written paramedic brief. The 911 dispatch will always stay simulated: a hackathon app should never call emergency services on its own.
+| Real and tested | Built against the Ring API, untested without a device | Simulated for the demo |
+| :--- | :--- | :--- |
+| MediaPipe Pose fall detector (tested on the UR Fall dataset and generated living-room clips; the “A fall” moment runs it live) | Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Stove and call-for-help detections (scripted triggers) |
+| Check-in countdown and three-step escalation | Live video over WebRTC (WHEP sessions), feeding the same detectors | Contact, motion and smoke/CO sensor events |
+| Family text (Amazon SNS) and email (Amazon SES) at step 2 | Playground access tokens and the OAuth refresh-token flow | In-home Ring Chime |
+| Paramedic brief and family message written by Claude on Amazon Bedrock (template fallback offline) | Signed webhooks streamed to the dashboard over SSE | Pan-Tilt motor control (not in the public API) |
+| | | The 911 dispatch, always: a hackathon app should never call emergency services on its own |
+
+**Next:** vision on the stove zone, speech and smoke-alarm detection on the stream’s audio track, Ring sensors over webhooks, a real Ring Chime sound, and a first run on real Ring hardware.
 
 The **Try a moment** buttons play generated footage through the same detectors, so the app works without a camera: an AI-generated living-room clip for the fall (made with Gemini Omni Flash), and drawn scenes of a kitchen and a porch (`scripts/generate_demo_videos.py`).
 
@@ -152,27 +155,27 @@ Rooted started from Amazon’s [Ring API Hello World](https://github.com/AmazonA
 ## Hackathon tracks
 
 - **Primary track:** Ring (Caretaking & Accessibility).
-- **AWS Builder mini-challenge:** the paramedic brief is a structured template today; the next step is generating it with AWS Bedrock and sending alerts through AWS SNS.
+- **AWS Builder mini-challenge:** at step 2, Claude on Amazon Bedrock writes the family message and paramedic brief from the incident record, and Amazon SNS and SES deliver them to the family. A least-privilege IAM user (`scripts/aws/`) is all the server can use.
 - **Open source mini-challenge:** MIT licensed; see [LICENSE](LICENSE).
 
 ---
 
 ## Product feedback: friction log
 
-What worked well, and what slowed us down, building on the Ring Developer Platform:
+What worked well, and what slowed us down, building on the Ring Developer Platform. We had no Ring hardware, so items marked *(docs)* come from the API documentation rather than a device.
 
 **Worked well**
-1. **WHEP streaming.** Standard WebRTC egress plays in the browser with no RTSP transcoding, and frames can be read straight into a canvas for on-device analysis.
-2. **Playground tokens.** Getting a first token takes minutes, and the starter app runs on the first try.
-3. **The starter template.** The video-processor interface (`init` / `process` / `cleanup`) made it easy to drop in new detectors.
+1. **WHEP streaming *(docs)*.** Standard WebRTC egress plays in a browser with no RTSP transcoding, so frames can be read straight into a canvas for on-device analysis. That design made a private, in-browser fall detector possible.
+2. **The starter template.** The video-processor interface (`init` / `process` / `cleanup`) made it easy to drop in new detectors, and the same pipeline runs on a file as on a stream, which is how we tested without a camera.
 
 **Friction**
-1. **Playground tokens last 30 minutes.** Long build or demo sessions mean re-pasting a token, and a care dashboard is meant to stay open all day. A longer-lived development token would help.
-2. **Live streams stop after 30 or 60 seconds.** Battery cameras stream for 30s, wired ones for 60s. A care dashboard has to reconnect in a loop, which means gaps in what the detectors see. A longer session for approved care use cases would help.
-3. **Audio is receive-only.** The stream’s audio track is great for listening for a call for help, but there is no talk-back, so the gentlest step of an escalation (a voice asking “Are you okay?”) isn’t possible through the camera. Ring Chime playback of a stored sound is the closest option.
-4. **No pan-tilt control.** We couldn’t find pan-tilt in the public API, so a care app can’t turn an indoor camera toward the person who needs help.
-5. **No care-shaped test footage.** Care and accessibility apps need a living room, a kitchen and a person who sits, stands and falls. We generated our own footage for the demo.
-6. **Long-lived event streams and tooling.** Our SSE webhook relay keeps a connection open, so headless test tools that wait for “network idle” never finish. Not a Ring bug, but a short note in the template docs would help.
+1. **No way to develop without a device.** Without a Ring camera there is no virtual camera, sample stream or sandbox device to point the app at, so streaming and device code can’t be exercised end to end. A simulator, or a Playground device that streams a sample clip, would let anyone build for Ring before buying hardware.
+2. **Live streams stop after 30 or 60 seconds *(docs)*.** Battery cameras stream for 30s, wired ones for 60s. A care dashboard has to reconnect in a loop, which means gaps in what the detectors see. A longer session for approved care use cases would help.
+3. **Audio is receive-only *(docs)*.** The stream’s audio track is great for listening for a call for help, but there is no talk-back, so the gentlest step of an escalation (a voice asking “Are you okay?”) isn’t possible through the camera. Ring Chime playback of a stored sound is the closest option.
+4. **No pan-tilt control *(docs)*.** We couldn’t find pan-tilt in the public API, so a care app can’t turn an indoor camera toward the person who needs help.
+5. **Short-lived Playground tokens *(docs)*.** Tokens last 30 minutes, and a care dashboard is meant to stay open all day. A longer-lived development token would help.
+6. **No care-shaped test footage.** Care and accessibility apps need a living room, a kitchen and a person who sits, stands and falls. We generated our own footage for the demo.
+7. **Long-lived event streams and tooling.** Our SSE webhook relay keeps a connection open, so headless test tools that wait for “network idle” never finish. Not a Ring bug, but a short note in the template docs would help.
 
 ---
 
