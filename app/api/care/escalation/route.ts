@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { writeBrief, notifyFamily } from '@/lib/care/outreach'
 
+// Step 2 contacts the family for real (SNS text, SES email) when those are configured.
+// Step 3, the 911 dispatch, is always simulated: a hackathon app must never call emergency services.
 export async function POST(req: NextRequest) {
   try {
-    const { incidentId, level, residentName, action } = await req.json()
+    const { incident, incidentId, level, action, unansweredSeconds } = await req.json()
+    const log: Record<string, any> = { incidentId: incident?.id ?? incidentId, level, action, timestamp: Date.now() }
 
-    const now = Date.now()
-    const log = {
-      incidentId,
-      level,
-      residentName: residentName || 'Resident #402',
-      action: action || 'ESCALATION_TRIGGERED',
-      timestamp: now,
-      channels: {
-        chimeSpeaker: level >= 1 ? 'AUDIO_BEACON_TRANSMITTED' : 'STANDBY',
-        caregiverSMS: level >= 2 ? 'AWS_SNS_SMS_SENT_TO_+15550198' : 'STANDBY',
-        cad911Dispatch: level >= 3 ? 'PARAMEDIC_CAD_REST_PAYLOAD_SENT' : 'STANDBY',
-      },
+    if (level === 2 && incident) {
+      const brief = await writeBrief(incident, unansweredSeconds ?? 15)
+      log.brief = brief
+      log.family = await notifyFamily(brief)
+    }
+    if (level >= 3) {
+      log.dispatch = 'SIMULATED (Rooted never calls emergency services)'
     }
 
+    console.log('[escalation]', JSON.stringify({ ...log, brief: log.brief && { source: log.brief.source } }))
     return NextResponse.json({ success: true, log })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

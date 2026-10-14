@@ -195,6 +195,24 @@ export default function Dashboard() {
     return () => clearInterval(timer)
   }, [escalation.active])
 
+  // Step 2: when the countdown reaches the family step, text and email them once
+  const familyNotified = useRef<string | null>(null)
+  useEffect(() => {
+    if (!escalation.active || escalation.level < 2 || !activeIncident) return
+    if (familyNotified.current === activeIncident.id) return
+    familyNotified.current = activeIncident.id
+    fetch('/api/care/escalation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        incident: activeIncident,
+        level: 2,
+        action: 'FAMILY_ALERT',
+        unansweredSeconds: escalation.totalSeconds - escalation.secondsRemaining,
+      }),
+    }).catch(console.error)
+  }, [escalation.active, escalation.level, escalation.totalSeconds, escalation.secondsRemaining, activeIncident])
+
   // When the countdown runs out with no answer, send the dispatch once
   const autoDispatched = useRef<string | null>(null)
   useEffect(() => {
