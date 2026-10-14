@@ -1,4 +1,4 @@
-import { AnthropicBedrockMantle } from '@anthropic-ai/bedrock-sdk'
+import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns'
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
@@ -14,7 +14,9 @@ import type { CareIncident } from '../types/care'
  * contacts the family numbers and addresses configured in .env.local.
  */
 
-const MODEL = 'anthropic.claude-opus-5-5'
+// Claude Opus 4.5 is the newest Claude this AWS account can use on Bedrock today.
+// Set BEDROCK_MODEL=us.anthropic.claude-opus-5-5 once AWS enables Opus 5.5 for the account.
+const MODEL = process.env.BEDROCK_MODEL || 'us.anthropic.claude-opus-4-5-20251101-v1:0'
 const REGION = process.env.AWS_REGION || 'us-east-1'
 const hasAws = Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY)
 
@@ -81,13 +83,13 @@ function template(incident: CareIncident, unansweredSeconds: number): CareBrief 
   }
 }
 
-let bedrock: AnthropicBedrockMantle | null = null
+let bedrock: AnthropicBedrock | null = null
 
 /** Family message and paramedic brief, written by Claude on Bedrock when available. */
 export async function writeBrief(incident: CareIncident, unansweredSeconds = 30): Promise<CareBrief> {
   if (!hasAws) return template(incident, unansweredSeconds)
   try {
-    bedrock ??= new AnthropicBedrockMantle({ awsRegion: REGION })
+    bedrock ??= new AnthropicBedrock({ awsRegion: REGION })
     const response = await bedrock.messages.parse(
       {
         model: MODEL,
