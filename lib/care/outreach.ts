@@ -94,7 +94,7 @@ export async function writeBrief(incident: CareIncident, unansweredSeconds = 30)
       {
         model: MODEL,
         max_tokens: 4000,
-        output_config: { effort: 'low', format: zodOutputFormat(Brief) },
+        output_config: { format: zodOutputFormat(Brief) },
         system: SYSTEM,
         messages: [{ role: 'user', content: JSON.stringify(recordFor(incident, unansweredSeconds), null, 2) }],
       },
