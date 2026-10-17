@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('incidents')
   const [webhookUrl, setWebhookUrl] = useState('')
   const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
+  const [deviceName, setDeviceName] = useState<string | undefined>(undefined)
   const [deviceError, setDeviceError] = useState<string | null>(null)
   const [authMode, setAuthMode] = useState<AuthMode>(null)
   const [authError, setAuthError] = useState<string | null>(null)
@@ -307,6 +308,7 @@ export default function Dashboard() {
       .then((data) => {
         if (data.devices && data.devices.length > 0) {
           setDeviceId(data.devices[0].id)
+          setDeviceName(data.devices[0].name)
         } else {
           setDeviceError(data.error || 'No Ring devices found')
         }
@@ -315,7 +317,7 @@ export default function Dashboard() {
   }, [authMode])
 
   // Custom hooks
-  const { streamActive, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId })
+  const { streamActive, receiving, streamError, startStream, stopStream } = useWebRTCStream({ videoRef, deviceId })
 
   // A live Ring stream: listen to its audio track for calls for help
   useEffect(() => {
@@ -602,7 +604,7 @@ export default function Dashboard() {
         hasToken={!!authMode}
       />
 
-      <CareTelemetryBar telemetry={telemetry} escalation={escalation} demo={!streamActive} />
+      <CareTelemetryBar telemetry={telemetry} escalation={escalation} demo={!streamActive} liveDevice={deviceName} />
 
       <div className="flex-1 flex gap-5 min-h-0 px-6 pb-5">
         {/* Left: the window into the home + Pan-Tilt controller */}
@@ -613,8 +615,8 @@ export default function Dashboard() {
 
             {streamActive && (
               <span className="absolute top-4 left-4 z-30 flex items-center gap-2 rounded-full bg-bark/70 px-3 py-1.5 text-[12px] font-medium text-parchment-paper backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-moss-soft animate-breathe" />
-                Living room · live
+                <span className={`h-2 w-2 rounded-full ${receiving ? 'bg-moss-soft animate-breathe' : 'bg-honey animate-pulse'}`} />
+                {receiving ? `${deviceName || 'Ring camera'} · live` : `Connecting to ${deviceName || 'the Ring camera'}…`}
               </span>
             )}
 
@@ -696,8 +698,8 @@ export default function Dashboard() {
           <div className="flex items-center justify-between px-2 text-[12px] text-bark-mute">
             {streamActive ? (
               <>
-                <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
-                <span>Live from the Ring camera</span>
+                <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose and Whisper</span>
+                <span>Live from {deviceName || 'the Ring camera'}</span>
               </>
             ) : (
               <>

@@ -47,7 +47,7 @@ export function PanTiltControl({ panTilt, onUpdate }: PanTiltControlProps) {
         <div className="leading-tight">
           <div className="text-[13.5px] font-semibold">Look around</div>
           <div className="text-[11.5px] text-bark-mute">
-            Pan-Tilt cam · {panTilt.panAngle}° / {panTilt.tiltAngle}°
+            Pan-Tilt cam (simulated) · {panTilt.panAngle}° / {panTilt.tiltAngle}°
           </div>
         </div>
       </div>
