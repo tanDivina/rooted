@@ -602,7 +602,7 @@ export default function Dashboard() {
         hasToken={!!authMode}
       />
 
-      <CareTelemetryBar telemetry={telemetry} escalation={escalation} />
+      <CareTelemetryBar telemetry={telemetry} escalation={escalation} demo={!streamActive} />
 
       <div className="flex-1 flex gap-5 min-h-0 px-6 pb-5">
         {/* Left: the window into the home + Pan-Tilt controller */}
@@ -621,7 +621,7 @@ export default function Dashboard() {
             {activeVideoSrc && !streamActive && (
               <span className="absolute top-4 left-4 z-30 flex items-center gap-2 rounded-full bg-bark/80 px-3 py-1.5 text-[12px] font-medium text-parchment-paper backdrop-blur">
                 <span className="h-2 w-2 rounded-full bg-honey animate-pulse" />
-                Scenario footage active · Sentinel evaluating
+                Demo footage · detectors running
               </span>
             )}
 
@@ -694,8 +694,17 @@ export default function Dashboard() {
           />
 
           <div className="flex items-center justify-between px-2 text-[12px] text-bark-mute">
-            <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
-            <span>~120 ms · 1080p · 30 fps</span>
+            {streamActive ? (
+              <>
+                <span>Ring Partner API · WebRTC (WHEP) · MediaPipe Pose</span>
+                <span>Live from the Ring camera</span>
+              </>
+            ) : (
+              <>
+                <span>No Ring camera connected · demo footage through the real detectors</span>
+                <span>MediaPipe Pose and Whisper, on this device</span>
+              </>
+            )}
           </div>
         </section>
 

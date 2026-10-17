@@ -38,7 +38,7 @@ export function SensorGrid({
           <h2 className="font-serif text-xl font-semibold">Daily rhythms</h2>
           <span className="flex items-center gap-1.5 text-[12px] text-moss-deep">
             <span className="h-1.5 w-1.5 rounded-full bg-moss animate-breathe" />
-            {contactSensors.length + motionSensors.length + 1} Ring Alarm sensors
+            {contactSensors.length + motionSensors.length + 1} Ring Alarm sensors (simulated)
           </span>
         </div>
         <p className="text-[13px] text-bark-mute">

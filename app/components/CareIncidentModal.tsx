@@ -113,7 +113,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
         setModalMode('cancelled_reassurance')
         setTimeout(() => {
           onCancel()
-        }, 2200)
+        }, 3500)
       } else {
         holdRafRef.current = requestAnimationFrame(step)
       }
@@ -166,7 +166,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
     setModalMode('cancelled_reassurance')
     setTimeout(() => {
       onCancel()
-    }, 2400)
+    }, 3500)
   }
 
   // Answered for themselves: a calm confirmation, then the view goes back to normal

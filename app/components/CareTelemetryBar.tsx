@@ -7,10 +7,12 @@ import { CameraIcon, SapIcon, CellIcon, BatteryIcon, SignalIcon } from './icons'
 interface CareTelemetryBarProps {
   telemetry: DeviceTelemetry
   escalation: EscalationStatus
+  // No Ring camera connected: the moments play demo footage, and the camera health is simulated
+  demo?: boolean
 }
 
 /** "Root system" health: everything that has to hold for Rooted to keep watch. */
-export function CareTelemetryBar({ telemetry, escalation }: CareTelemetryBarProps) {
+export function CareTelemetryBar({ telemetry, escalation, demo }: CareTelemetryBarProps) {
   const item = 'flex items-center gap-2 text-[13px]'
   const label = 'text-bark-mute'
   return (
@@ -21,31 +23,33 @@ export function CareTelemetryBar({ telemetry, escalation }: CareTelemetryBarProp
         <div className={item}>
           <CameraIcon className={`w-4 h-4 ${telemetry.online ? 'text-moss' : 'text-ember'}`} />
           <span className={label}>Camera</span>
-          <span className={`font-medium ${telemetry.online ? 'text-moss-deep' : 'text-ember'}`}>
-            {telemetry.online ? 'Online' : 'Offline'}
+          <span className={`font-medium ${telemetry.online ? (demo ? 'text-[#7a4f12]' : 'text-moss-deep') : 'text-ember'}`}>
+            {!telemetry.online ? 'Offline' : demo ? 'Not connected · demo footage' : 'Online'}
           </span>
         </div>
 
         <div className={item}>
           <SapIcon className="w-4 h-4 text-moss" />
           <span className={label}>Heartbeat</span>
-          <span className="font-medium">every {telemetry.heartbeatIntervalSec}s</span>
+          <span className="font-medium">every {telemetry.heartbeatIntervalSec}s{demo ? ' (simulated)' : ''}</span>
         </div>
 
         <div className={item}>
           <CellIcon className={`w-4 h-4 ${telemetry.online ? 'text-bark-soft' : 'text-honey'}`} />
           <span className={label}>Cellular backup</span>
           <span className={`font-medium ${telemetry.online ? '' : 'text-honey'}`}>
-            {telemetry.online ? 'Ready' : 'Carrying alerts'}
+            {telemetry.online ? 'Ready' : 'Carrying alerts'}{demo ? ' (simulated)' : ''}
           </span>
         </div>
 
+        {!demo && (
         <div className={`${item} text-bark-soft`}>
           <BatteryIcon className="w-4 h-4" />
           <span className="font-medium text-bark">{telemetry.batteryLevel ?? 94}%</span>
           <SignalIcon className="w-4 h-4 ml-2" />
           <span className="font-medium text-bark">{(telemetry.wifiSignal || '-52 dBm').split(' ').slice(0, 2).join(' ')}</span>
         </div>
+        )}
       </div>
 
       {escalation.active ? (
