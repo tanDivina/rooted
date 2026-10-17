@@ -48,7 +48,7 @@ What drives families toward a move is usually fear of the fall nobody sees. [Abo
 When something is wrong, a 45-second check-in countdown starts. One “I’m okay” ends it; silence moves it outward:
 
 1. **At home.** A chime in the home (the Ring API can play a sound on a Ring Chime; it has no talk-back, so there is no voice check).
-2. **Family.** Text and call to the caregiver, over cellular if needed.
+2. **Family.** An email and a text to the caregiver, over cellular if needed.
 3. **Emergency services.** Dispatch, with a structured paramedic brief.
 
 Every moment is kept in **Growth rings**, the caregiver’s timeline.
@@ -69,13 +69,13 @@ Every moment is kept in **Growth rings**, the caregiver’s timeline.
 Ring camera (AVA: WebRTC stream, status, events)
         │
         ▼
-Roots: in-browser vision & audio (fall heuristic, stove zone, keyword listener)
+Roots: in-browser vision & audio (MediaPipe Pose fall, stove zone, Whisper listener)
         │  incident
         ▼
 Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
         │  no answer
         ├─► Step 1: in-home chime
-        ├─► Step 2: caregiver SMS + call
+        ├─► Step 2: caregiver email + text
         └─► Step 3: emergency dispatch + paramedic brief
 ```
 

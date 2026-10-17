@@ -369,7 +369,11 @@ export default function Dashboard() {
     }
     setPanTilt((p) => ({ ...p, panAngle: 75, tiltAngle: -10, currentPreset: 'Kitchen Stove (Auto-Slewed)' }))
     fallDetectionProcessor.reset() // kitchen footage: nobody in view
-    stoveHazardProcessor.triggerSimulatedHazard()
+    // Scripted hazard, a few seconds in, so the empty kitchen is seen before the alert covers it
+    fallTimerRef.current = setTimeout(() => {
+      fallTimerRef.current = null
+      stoveHazardProcessor.triggerSimulatedHazard()
+    }, 3000)
   }
 
   // The call-for-help clip shows an empty room: she has fallen out of view, in the hallway,
