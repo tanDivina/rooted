@@ -78,7 +78,10 @@ export class VoiceDistressProcessor implements VideoProcessor {
     this.worker = new Worker(new URL('./whisper.worker.ts', import.meta.url), { type: 'module' })
     this.worker.onmessage = (e: MessageEvent<{ ready?: boolean; text?: string; error?: string }>) => {
       if (e.data.ready) this.workerReady = true
-      if (e.data.error) console.warn('[VoiceDistress]', e.data.error)
+      if (e.data.error) {
+        console.warn('[VoiceDistress]', e.data.error)
+        this.busy = false // a failed window must not stop the listener for good
+      }
       if (e.data.text != null) {
         this.workerReady = true
         this.busy = false
