@@ -53,7 +53,15 @@ When something is wrong, a 45-second check-in countdown starts. One “I’m oka
 
 Every moment is kept in **Growth rings**, the caregiver’s timeline.
 
-**Hard to cancel by accident, easy to cancel on purpose.** “I’m okay” is a 2.5-second hold, so a stray tap can’t dismiss a real fall. “Send help now” gives a 15-second grace window in case it was pressed by mistake, and every cancel is followed by a 60-second quiet check.
+**Who answers the check-in?** Not a button: someone on the floor can’t reach a screen. They answer the room:
+
+- **Say “I’m okay.”** Whisper is already listening on the camera’s audio, so a spoken “I’m okay” (or “I’m fine”, “estoy bien”) is heard on the device. If they’re still on the floor, Rooted doesn’t take their word for it and stand down: people often say they’re fine when they aren’t. It *waits* (two minutes), sends the family a gentle “they fell and say they’re okay” note, and reaches out again if they stay down.
+- **Get up.** The pose detector watches for them back on their feet. Seen standing again after a fall, the alert stands down by itself and the family gets a short “back up” note.
+- **Someone who checked.** The dashboard’s hold button is for whoever actually checked on them: family on the phone, or a neighbour who looked in.
+
+The **“A fall, then ‘I’m okay’”** moment shows all of it on real detection: a fall, “I’m okay” heard from the floor, then the pose detector seeing him stand.
+
+**Hard to cancel by accident, easy to cancel on purpose.** The dashboard’s “I checked, they’re okay” is a 2.5-second hold, so a stray tap can’t dismiss a real fall. “Send help now” gives a 15-second grace window in case it was pressed by mistake, and every cancel is followed by a 60-second quiet check.
 
 **Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener add context (medicine cabinet opened, a trip to the fridge, the front door at night), and a Ring Pan-Tilt Indoor Cam can turn toward whatever needs a look.
 
@@ -138,6 +146,7 @@ We built Rooted without any Ring hardware, so nothing here has run against a rea
 | :--- | :--- | :--- |
 | MediaPipe Pose fall detector (tested on the UR Fall dataset and generated living-room clips; the “A fall” moment runs it live) | Device discovery (`/v1/devices`) and status / heartbeat (`/v1/devices/{id}/status`) | Stove detection (scripted trigger) |
 | Call-for-help listener: Whisper on-device on the audio track (English tested on a generated clip; the “A call for help” moment runs it live) | Live video over WebRTC (WHEP sessions), feeding the same detectors | Contact, motion and smoke/CO sensor events |
+| Answering the check-in: a spoken “I’m okay” (Whisper) pauses escalation while they’re still down; getting back up (pose) stands it down (tested on a generated clip) | | |
 | Check-in countdown and three-step escalation | | |
 | Family email (Amazon SES) at step 2 | Playground access tokens and the OAuth refresh-token flow; the family text (Amazon SNS), which sends but hasn’t reached our test phone yet | In-home Ring Chime |
 | Paramedic brief and family message written by Claude on Amazon Bedrock (template fallback offline) | Signed webhooks streamed to the dashboard over SSE | Pan-Tilt motor control (not in the public API) |

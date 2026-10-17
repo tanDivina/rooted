@@ -9,6 +9,8 @@ interface CareIncidentModalProps {
   escalation: EscalationStatus
   onCancel: () => void
   onImmediateDispatch: () => void
+  // Shown briefly when the person answered for themselves and the alert stood down on its own
+  resolution?: { title: string; body: string } | null
 }
 
 const STEPS = [
@@ -19,7 +21,7 @@ const STEPS = [
 
 const HOLD_DURATION_MS = 2500 // 2.5 seconds deliberate hold required to cancel
 
-export function CareIncidentModal({ incident, escalation, onCancel, onImmediateDispatch }: CareIncidentModalProps) {
+export function CareIncidentModal({ incident, escalation, onCancel, onImmediateDispatch, resolution }: CareIncidentModalProps) {
   const chimedFor = useRef<string | null>(null)
 
   // Sub-state inside modal: 'incident' | 'grace_dispatch' | 'cancelled_reassurance'
@@ -167,10 +169,26 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
     }, 2400)
   }
 
+  // Answered for themselves: a calm confirmation, then the view goes back to normal
+  if (resolution && !(incident && escalation.active)) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-bark/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-parchment-paper shadow-2xl ring-1 ring-moss/30 p-8 text-center flex flex-col items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-moss-wash text-moss ring-4 ring-moss/20">
+            <CheckIcon className="h-8 w-8" />
+          </div>
+          <h2 className="font-serif text-[26px] font-semibold text-bark">{resolution.title}</h2>
+          <p className="text-[15px] leading-relaxed text-bark-soft max-w-md">{resolution.body}</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!incident || !escalation.active) return null
 
-  const remaining = escalation.secondsRemaining
-  const frac = Math.max(0, Math.min(1, remaining / escalation.totalSeconds))
+  const paused = !!escalation.paused
+  const remaining = paused ? escalation.resumeIn ?? 0 : escalation.secondsRemaining
+  const frac = Math.max(0, Math.min(1, paused ? remaining / 120 : remaining / escalation.totalSeconds))
   const dispatched = remaining <= 0
   const R = 34
   const C = 2 * Math.PI * R
@@ -185,14 +203,14 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-moss-wash text-moss ring-4 ring-moss/20">
             <CheckIcon className="h-8 w-8" />
           </div>
-          <h2 className="font-serif text-[26px] font-semibold text-bark">All clear. Glad you’re okay.</h2>
+          <h2 className="font-serif text-[26px] font-semibold text-bark">All clear.</h2>
           <p className="text-[15px] leading-relaxed text-bark-soft max-w-md">
-            The alert is stood down, and your family gets a short note that you’re safe.
+            The alert is stood down and noted in Growth rings.
           </p>
           <div className="w-full rounded-2xl bg-parchment p-4 text-left border border-bark-line/60 flex items-start gap-3">
             <ShieldIcon className="w-5 h-5 shrink-0 text-moss mt-0.5" />
             <div className="text-[13px] leading-relaxed text-bark-soft">
-              <strong className="text-bark font-semibold">A quiet follow-up:</strong> for the next 60 seconds the camera looks for you up and moving. If it doesn’t see that, Rooted reaches out again.
+              <strong className="text-bark font-semibold">A quiet follow-up:</strong> for the next 60 seconds the camera looks for them up and moving. If it doesn’t see that, Rooted reaches out again.
             </div>
           </div>
         </div>
@@ -247,10 +265,10 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
 
               <div className="flex flex-col gap-2">
                 <div className="text-[15px] font-medium text-bark leading-snug">
-                  Your family is being told now. The paramedic brief goes to 911 in {graceRemaining}s.
+                  The family is being told now. The paramedic brief goes to 911 in {graceRemaining}s.
                 </div>
                 <p className="text-[13px] text-bark-mute leading-relaxed">
-                  The camera speaker is letting the room know help is coming. Pressed it by accident? Stand it down below, no harm done.
+                  Pressed it by accident? Stand it down below, no harm done.
                 </p>
               </div>
             </div>
@@ -262,7 +280,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                 className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-bark py-4 px-6 text-base font-bold text-parchment-paper shadow-lg transition hover:bg-bark/90 active:scale-[0.98]"
               >
                 <CloseIcon className="w-5 h-5 text-ember-wash" />
-                <span>I’m okay, cancel</span>
+                <span>Cancel, it was a mistake</span>
               </button>
 
               <button
@@ -286,10 +304,10 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-bark/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-xl overflow-hidden rounded-3xl bg-parchment-paper shadow-2xl ring-1 ring-ember/40">
         {/* Header band */}
-        <div className="bg-ember px-7 py-5 text-parchment-paper">
+        <div className={`${paused ? 'bg-honey' : 'bg-ember'} px-7 py-5 text-parchment-paper transition-colors`}>
           <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] opacity-90">
             <AlertIcon className="w-4 h-4" />
-            Something’s not right
+            {paused ? 'They answered, still on the floor' : 'Something’s not right'}
           </div>
           <h2 className="mt-1.5 font-serif text-[28px] font-semibold leading-tight">{incident.title}</h2>
         </div>
@@ -305,7 +323,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                   cy="40"
                   r={R}
                   fill="none"
-                  stroke="#A8432B"
+                  stroke={paused ? '#B7791F' : '#A8432B'}
                   strokeWidth="6"
                   strokeLinecap="round"
                   strokeDasharray={C}
@@ -323,11 +341,17 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-[15px] leading-relaxed text-bark">{incident.description}</p>
+              <p className="text-[15px] leading-relaxed text-bark">
+                {paused
+                  ? `${escalation.acknowledgedBy}, but they’re still on the floor. Rooted is waiting to see them get up, and the family has a gentle note.`
+                  : incident.description}
+              </p>
               <p className="text-[13px] text-bark-mute">
-                {dispatched
+                {paused
+                  ? `Reaches out again in ${remaining}s if they stay down.`
+                  : dispatched
                   ? 'No answer came. Help has been sent.'
-                  : 'If no one answers, Rooted reaches further out.'}{' '}
+                  : 'They can answer out loud with “I’m okay”, or just get up. Otherwise Rooted reaches further out.'}{' '}
                 Confidence {(incident.confidence * 100).toFixed(0)}% · {new Date(incident.timestamp).toLocaleTimeString()}
               </p>
             </div>
@@ -370,7 +394,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                   onPointerUp={cancelHold}
                   onPointerLeave={cancelHold}
                   onPointerCancel={cancelHold}
-                  className="relative overflow-hidden w-full flex items-center justify-center gap-2.5 rounded-2xl bg-moss py-4 px-5 text-base font-semibold text-parchment-paper shadow-md transition active:scale-[0.99] touch-none"
+                  className="relative overflow-hidden w-full flex items-center justify-center gap-2.5 rounded-2xl bg-moss py-4 px-4 text-[15px] whitespace-nowrap font-semibold text-parchment-paper shadow-md transition active:scale-[0.99] touch-none"
                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
                   {/* Progress fill track */}
@@ -384,7 +408,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
                     {isHolding ? (
                       <span>Hold to confirm ({(Math.max(0, (HOLD_DURATION_MS * (100 - holdProgress)) / 100000)).toFixed(1)}s)…</span>
                     ) : (
-                      <span>Hold 2.5s: I’m okay</span>
+                      <span>Hold 2.5s: I checked, they’re okay</span>
                     )}
                   </span>
                 </button>
@@ -412,7 +436,7 @@ export function CareIncidentModal({ incident, escalation, onCancel, onImmediateD
               <span className="flex items-center gap-1.5">
                 <ShieldIcon className="w-4 h-4 shrink-0 text-moss" />
                 <span>
-                  <strong>Hard to dismiss by accident:</strong> a single tap won’t cancel, and Rooted checks in for 60s after any cancel.
+                  <strong>For whoever checked on them:</strong> family on the phone, or a neighbour in the room. A single tap won’t cancel.
                 </span>
               </span>
             </div>

@@ -16,6 +16,11 @@ const DISTRESS = [
   'help', 'i fell', 'i have fallen', 'cant get up', 'can not get up', 'cannot get up', 'call 911', 'ambulance',
   'ayuda', 'auxilio', 'socorro', 'me cai', 'no me puedo levantar',
 ]
+// An answer to the check-in, spoken to the room. A call for help in the same breath wins.
+const OKAY = [
+  'im okay', 'i am okay', 'im ok', 'i am ok', 'im fine', 'i am fine', 'im alright', 'im all right', 'i am all right',
+  'estoy bien',
+]
 
 const normalise = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
@@ -48,6 +53,7 @@ export class VoiceDistressProcessor implements VideoProcessor {
   private lastPhrase: string | null = null
   private lastDetectionTime = 0
   private onIncidentCallback?: (incident: any) => void
+  private onOkayCallback?: (phrase: string) => void
 
   constructor(onIncident?: (incident: any) => void) {
     this.onIncidentCallback = onIncident
@@ -55,6 +61,11 @@ export class VoiceDistressProcessor implements VideoProcessor {
 
   setIncidentCallback(cb: (incident: any) => void) {
     this.onIncidentCallback = cb
+  }
+
+  /** Called when someone answers the room with “I’m okay”. The dashboard decides what it means. */
+  setOkayCallback(cb: (phrase: string) => void) {
+    this.onOkayCallback = cb
   }
 
   /** Whether the speech model has loaded. */
@@ -130,7 +141,8 @@ export class VoiceDistressProcessor implements VideoProcessor {
     // Loudness of the newest 0.5 s, against a slowly learned background level (clock, fridge, TV hum)
     const recent = audio.subarray(n - SAMPLE_RATE / 2)
     const rms = Math.sqrt(recent.reduce((s, x) => s + x * x, 0) / recent.length)
-    this.roomRms = this.roomRms === 0 ? rms : Math.min(rms, this.roomRms * 0.9 + rms * 0.1)
+    // Start the room's level low, so a call in the very first window (or after true silence) still counts
+    this.roomRms = this.roomRms === 0 ? Math.min(rms, SPEECH_RMS / ABOVE_ROOM) : Math.min(rms, this.roomRms * 0.9 + rms * 0.1)
     if (rms < SPEECH_RMS || rms < this.roomRms * ABOVE_ROOM) return
     this.busy = true
     this.worker.postMessage({ id: this.seq++, audio, languages: LANGUAGES }, [audio.buffer])
@@ -140,6 +152,11 @@ export class VoiceDistressProcessor implements VideoProcessor {
     const heard = normalise(text)
     const matched = DISTRESS.find((w) => heard.includes(w))
     const now = Date.now()
+    if (!matched) {
+      const okay = OKAY.find((w) => heard.includes(w))
+      if (okay) this.onOkayCallback?.(text.trim().replace(/[\s.,!?]+$/, ''))
+      return
+    }
     if (!matched || now - this.lastDetectionTime < COOLDOWN_MS) return
     this.lastDetectionTime = now
     // Quote the language that matched, not both transcripts

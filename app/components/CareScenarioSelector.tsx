@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
-import { FallIcon, KettleIcon, VoiceIcon, SignalOffIcon, KeyIcon, ArrowOutIcon, CloseIcon } from './icons'
+import { FallIcon, SproutIcon, KettleIcon, VoiceIcon, SignalOffIcon, KeyIcon, ArrowOutIcon, CloseIcon } from './icons'
 
 interface CareScenarioSelectorProps {
   onTriggerFall: () => void
+  onTriggerFallOkay: () => void
   onTriggerStove: () => void
   onTriggerVoice: () => void
   onToggleOffline: () => void
@@ -15,6 +16,7 @@ interface CareScenarioSelectorProps {
 
 export function CareScenarioSelector({
   onTriggerFall,
+  onTriggerFallOkay,
   onTriggerStove,
   onTriggerVoice,
   onToggleOffline,
@@ -45,6 +47,10 @@ export function CareScenarioSelector({
         <button onClick={onTriggerFall} className={`${chip} border-ember/30 bg-ember-wash/60 text-ember-deep hover:bg-ember-wash`}>
           <FallIcon className="w-4 h-4" />
           A fall
+        </button>
+        <button onClick={onTriggerFallOkay} className={`${chip} border-moss/30 bg-moss-wash/60 text-moss-deep hover:bg-moss-wash`}>
+          <SproutIcon className="w-4 h-4" />
+          A fall, then “I’m okay”
         </button>
         <button onClick={onTriggerStove} className={`${chip} border-honey/30 bg-honey-wash/60 text-[#7a4f12] hover:bg-honey-wash`}>
           <KettleIcon className="w-4 h-4" />

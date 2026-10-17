@@ -83,6 +83,30 @@ function template(incident: CareIncident, unansweredSeconds: number): CareBrief 
   }
 }
 
+export type FamilyUpdate = 'says_okay' | 'got_up'
+
+/**
+ * A short, calm follow-up when the person answers for themselves: they said “I’m okay” while
+ * still on the floor, or the camera saw them get back up. Plain facts, so no model is needed.
+ */
+export function updateFor(incident: CareIncident, update: FamilyUpdate): CareBrief {
+  const at = localTime(Date.now())
+  const what = incident.title.toLowerCase()
+  return update === 'says_okay'
+    ? {
+        source: 'template',
+        familySubject: 'Rooted: a fall, and they say they’re okay',
+        familyMessage: `Rooted noticed ${what}. At ${at} they answered “I’m okay”, but they are still on the floor. Rooted is waiting to see them get up, and will reach out again if they don’t within two minutes. A call from you would help.`,
+        paramedicBrief: '',
+      }
+    : {
+        source: 'template',
+        familySubject: 'Rooted: back up after a fall',
+        familyMessage: `Rooted noticed ${what}. At ${at} the camera saw them get back up, so the alert is stood down. Worth a call to check they aren’t hurt.`,
+        paramedicBrief: '',
+      }
+}
+
 let bedrock: AnthropicBedrock | null = null
 
 /** Family message and paramedic brief, written by Claude on Bedrock when available. */
@@ -136,7 +160,13 @@ export async function notifyFamily(brief: CareBrief): Promise<{ sms: ChannelResu
               Content: {
                 Simple: {
                   Subject: { Data: brief.familySubject },
-                  Body: { Text: { Data: `${brief.familyMessage}\n\n— Brief for paramedics —\n${brief.paramedicBrief}` } },
+                  Body: {
+                    Text: {
+                      Data: brief.paramedicBrief
+                        ? `${brief.familyMessage}\n\n— Brief for paramedics —\n${brief.paramedicBrief}`
+                        : brief.familyMessage,
+                    },
+                  },
                 },
               },
             })

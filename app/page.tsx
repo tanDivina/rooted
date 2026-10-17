@@ -165,12 +165,69 @@ export default function Dashboard() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // The detectors call back outside React, so they read the open alert through refs
+  const activeIncidentRef = useRef<CareIncident | null>(null)
+  activeIncidentRef.current = activeIncident
+  const escalationRef = useRef(escalation)
+  escalationRef.current = escalation
+
+  // A short confirmation when the person answers for themselves (heard, or seen getting up)
+  const [resolution, setResolution] = useState<{ title: string; body: string } | null>(null)
+  useEffect(() => {
+    if (!resolution) return
+    const t = setTimeout(() => setResolution(null), 4000)
+    return () => clearTimeout(t)
+  }, [resolution])
+
   // Incident handler
   const handleNewIncident = useCallback((incident: CareIncident) => {
     setIncidents((prev) => [incident, ...prev])
     setActiveIncident(incident)
     failSafeSentinelProcessor.armDeadMansSwitch(incident)
   }, [])
+
+  const sendFamilyUpdate = (incident: CareIncident, update: 'says_okay' | 'got_up') =>
+    fetch('/api/care/escalation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ incident, level: 2, action: 'FAMILY_UPDATE', update }),
+    }).catch(console.error)
+
+  // Stand the alert down because the person answered for themselves, and note it in Growth rings
+  const resolveIncident = useCallback((incident: CareIncident, reason: string, note: string) => {
+    failSafeSentinelProcessor.cancelAlarm(reason)
+    setIncidents((prev) =>
+      prev.map((inc) => (inc.id === incident.id ? { ...inc, resolved: true, description: `${inc.description} ${note}` } : inc))
+    )
+    setActiveIncident(null)
+  }, [])
+
+  // “I’m okay”, said to the room. Still on the floor after a fall: wait and tell the family gently,
+  // because people often say they’re fine when they aren’t. Otherwise it answers the check-in.
+  const handleOkayHeard = useCallback((phrase: string) => {
+    const incident = activeIncidentRef.current
+    const esc = escalationRef.current
+    if (!incident || !esc.active || esc.paused) return
+    if (incident.type === 'fall_detected' && fallDetectionProcessor.onFloor) {
+      failSafeSentinelProcessor.pauseForOkay(`Heard “${phrase}”`)
+      setIncidents((prev) =>
+        prev.map((inc) => (inc.id === incident.id ? { ...inc, description: `${inc.description} Said “${phrase}” from the floor.` } : inc))
+      )
+      sendFamilyUpdate(incident, 'says_okay')
+      return
+    }
+    resolveIncident(incident, `Heard “${phrase}”`, `Answered “${phrase}”.`)
+    setResolution({ title: 'They answered: “I’m okay.”', body: `Rooted heard “${phrase}” on the camera’s audio, so the alert is stood down.` })
+  }, [resolveIncident])
+
+  // Seen back on their feet after a fall: the best answer there is
+  const handleRecovered = useCallback(() => {
+    const incident = activeIncidentRef.current
+    if (!incident || incident.type !== 'fall_detected' || !escalationRef.current.active) return
+    resolveIncident(incident, 'Seen getting back up', 'Then got back up.')
+    sendFamilyUpdate(incident, 'got_up')
+    setResolution({ title: 'Back up.', body: 'The camera saw them get up, so the alert is stood down. The family gets a short note.' })
+  }, [resolveIncident])
 
   // Load the pose and speech models up front, so they are ready before the first frame that matters
   useEffect(() => {
@@ -183,11 +240,13 @@ export default function Dashboard() {
     fallDetectionProcessor.setIncidentCallback(handleNewIncident)
     stoveHazardProcessor.setIncidentCallback(handleNewIncident)
     voiceDistressProcessor.setIncidentCallback(handleNewIncident)
+    voiceDistressProcessor.setOkayCallback(handleOkayHeard)
+    fallDetectionProcessor.setRecoveredCallback(handleRecovered)
     failSafeSentinelProcessor.setCallbacks((t, e) => {
       setTelemetry(t)
       setEscalation({ ...e })
     }, handleNewIncident)
-  }, [handleNewIncident])
+  }, [handleNewIncident, handleOkayHeard, handleRecovered])
 
   // Drive the check-in countdown once per second while an alert is open
   useEffect(() => {
@@ -282,7 +341,7 @@ export default function Dashboard() {
 
   // Cancel / Acknowledge active alarm
   const handleCancelAlarm = () => {
-    failSafeSentinelProcessor.cancelAlarm('Resident Voice Confirmation: OK')
+    failSafeSentinelProcessor.cancelAlarm('Checked by family or a neighbour')
     // Clear the demo overlays so the view goes back to calm
     fallDetectionProcessor.reset()
     stoveHazardProcessor.reset()
@@ -352,6 +411,29 @@ export default function Dashboard() {
     setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 25, currentPreset: 'Living Room Floor (Auto-Slewed)' }))
     stoveHazardProcessor.reset() // living room footage: no stove zone in view
     fallDetectionProcessor.reset()
+    fallTimerRef.current = setTimeout(() => {
+      fallTimerRef.current = null
+      if (!fallDetectionProcessor.ready) fallDetectionProcessor.triggerSimulatedFall()
+    }, 9000)
+  }
+
+  // The same fall, but he answers: from the floor he says “I’m okay” (Whisper hears it, so the
+  // check-in waits and the family gets a gentle note), then gets up with the chair (pose sees him
+  // standing, so the alert stands down).
+  const triggerFallOkayScenario = () => {
+    clearFallTimer()
+    setActiveVideoSrc('/videos/fall-then-okay.mp4')
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+      videoRef.current.src = '/videos/fall-then-okay.mp4'
+      videoRef.current.loop = false
+      voiceDistressProcessor.listenTo(videoRef.current) // inside the click, so audio may start
+      videoRef.current.play().catch(console.error)
+    }
+    setPanTilt((p) => ({ ...p, panAngle: 0, tiltAngle: 25, currentPreset: 'Living Room Floor (Auto-Slewed)' }))
+    stoveHazardProcessor.reset()
+    fallDetectionProcessor.reset()
+    voiceDistressProcessor.reset()
     fallTimerRef.current = setTimeout(() => {
       fallTimerRef.current = null
       if (!fallDetectionProcessor.ready) fallDetectionProcessor.triggerSimulatedFall()
@@ -511,6 +593,7 @@ export default function Dashboard() {
 
       <CareScenarioSelector
         onTriggerFall={triggerFallScenario}
+        onTriggerFallOkay={triggerFallOkayScenario}
         onTriggerStove={triggerStoveScenario}
         onTriggerVoice={triggerVoiceScenario}
         onToggleOffline={toggleOfflineSimulation}
@@ -670,6 +753,7 @@ export default function Dashboard() {
         escalation={escalation}
         onCancel={handleCancelAlarm}
         onImmediateDispatch={handleImmediateDispatch}
+        resolution={resolution}
       />
     </div>
   )

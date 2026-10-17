@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeBrief, notifyFamily } from '@/lib/care/outreach'
+import { writeBrief, notifyFamily, updateFor } from '@/lib/care/outreach'
 
 // Step 2 contacts the family for real (SNS text, SES email) when those are configured.
 // Step 3, the 911 dispatch, is always simulated: a hackathon app must never call emergency services.
 export async function POST(req: NextRequest) {
   try {
-    const { incident, incidentId, level, action, unansweredSeconds } = await req.json()
+    const { incident, incidentId, level, action, unansweredSeconds, update } = await req.json()
     const log: Record<string, any> = { incidentId: incident?.id ?? incidentId, level, action, timestamp: Date.now() }
 
-    if (level === 2 && incident) {
+    if (action === 'FAMILY_UPDATE' && incident && update) {
+      log.family = await notifyFamily(updateFor(incident, update))
+    } else if (level === 2 && incident) {
       const brief = await writeBrief(incident, unansweredSeconds ?? 15)
       log.brief = brief
       log.family = await notifyFamily(brief)

@@ -67,7 +67,21 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
       levelLabel: 'Level 1: In-Home Two-Way Audio Verification',
       aborted: false,
       acknowledgedBy: null,
+      paused: false,
     }
+    this.notify()
+  }
+
+  /**
+   * Heard "I'm okay" but they are still on the floor. People often say they're fine when they
+   * aren't, so this doesn't stand the alert down: the countdown waits, and if they haven't got
+   * up by the time the wait runs out, it moves on to the family.
+   */
+  pauseForOkay(reason: string, waitSeconds = 120) {
+    if (!this.escalationStatus.active || this.escalationStatus.paused) return
+    this.escalationStatus.paused = true
+    this.escalationStatus.resumeIn = waitSeconds
+    this.escalationStatus.acknowledgedBy = reason
     this.notify()
   }
 
@@ -76,6 +90,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
    */
   cancelAlarm(reason = 'Resident Confirmed OK') {
     this.escalationStatus.active = false
+    this.escalationStatus.paused = false
     this.escalationStatus.aborted = true
     this.escalationStatus.acknowledgedBy = reason
     this.notify()
@@ -109,6 +124,16 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
 
   tickEscalation() {
     if (!this.escalationStatus.active) return
+    if (this.escalationStatus.paused) {
+      this.escalationStatus.resumeIn = Math.max(0, (this.escalationStatus.resumeIn ?? 0) - 1)
+      if (this.escalationStatus.resumeIn === 0) {
+        // Still down after the wait: carry on from the family step
+        this.escalationStatus.paused = false
+        this.escalationStatus.secondsRemaining = Math.min(this.escalationStatus.secondsRemaining, 30)
+      }
+      this.notify()
+      return
+    }
 
     if (this.escalationStatus.secondsRemaining > 0) {
       this.escalationStatus.secondsRemaining--

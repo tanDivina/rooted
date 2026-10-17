@@ -90,4 +90,7 @@ export interface EscalationStatus {
   levelLabel: string
   aborted: boolean
   acknowledgedBy: string | null
+  // Heard "I'm okay" while still on the floor: escalation waits instead of moving outward
+  paused?: boolean
+  resumeIn?: number
 }

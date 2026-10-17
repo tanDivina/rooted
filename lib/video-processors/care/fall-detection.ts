@@ -69,6 +69,7 @@ export class FallDetectionProcessor implements VideoProcessor {
   private lastFallTimestamp: number | null = null
   private lastSeenAt = 0
   private onIncidentCallback?: (incident: any) => void
+  private onRecoveredCallback?: () => void
 
   constructor(onIncident?: (incident: any) => void) {
     this.onIncidentCallback = onIncident
@@ -77,6 +78,11 @@ export class FallDetectionProcessor implements VideoProcessor {
   /** Whether the pose model has loaded and frames are being analysed. */
   get ready(): boolean {
     return this.landmarker != null
+  }
+
+  /** Whether the person is down on the floor right now (seen there, or lost from view there). */
+  get onFloor(): boolean {
+    return this.fallTriggered || this.posture === 'horizontal_floor' || this.posture === 'lying'
   }
 
   /** Whether a person was seen in the last couple of seconds (used by the stove watch). */
@@ -110,6 +116,11 @@ export class FallDetectionProcessor implements VideoProcessor {
 
   setIncidentCallback(cb: (incident: any) => void) {
     this.onIncidentCallback = cb
+  }
+
+  /** Called once when someone who fell is seen back up: sitting upright or on their feet. */
+  setRecoveredCallback(cb: () => void) {
+    this.onRecoveredCallback = cb
   }
 
   /**
@@ -303,12 +314,21 @@ export class FallDetectionProcessor implements VideoProcessor {
       if (this.posture === 'fall_detected' && torsoAngle > 35) {
         // Partly up but not upright yet: keep the alert state until they are clearly up
       } else {
-        this.fallTriggered = false
         const seated = H != null && gap < SEATED_GAP * H && torsoAngle < 40
-        if (seated) this.seatedHipY = hips.y
-        this.posture = seated ? 'sitting' : 'standing'
-        label = seated ? 'Sitting down' : 'Up and moving'
-        color = seated ? '#6B5242' : '#5C6B37'
+        if (this.fallTriggered && seated) {
+          // Sitting up after a fall, likely still on the floor: not recovered until on their feet
+          this.posture = 'sitting'
+          label = 'Sitting up'
+          color = '#B7791F'
+        } else {
+          const recovered = this.fallTriggered
+          this.fallTriggered = false
+          if (recovered) this.onRecoveredCallback?.()
+          if (seated) this.seatedHipY = hips.y
+          this.posture = seated ? 'sitting' : 'standing'
+          label = seated ? 'Sitting down' : 'Up and moving'
+          color = seated ? '#6B5242' : '#5C6B37'
+        }
       }
     }
 
