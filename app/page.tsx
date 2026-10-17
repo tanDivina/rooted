@@ -375,12 +375,25 @@ export default function Dashboard() {
   // Save token directly
   const handleSaveToken = async (token: string) => {
     try {
+      const saved = await fetch('/api/ring/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+      if (!saved.ok) {
+        setDeviceError((await saved.json()).error)
+        return
+      }
       setAuthMode('access_token')
-      // Discover devices with token
+      // Discover devices with the new token
       const res = await fetch('/api/ring/devices')
       const data = await res.json()
       if (data.devices?.[0]?.id) {
         setDeviceId(data.devices[0].id)
+        setDeviceName(data.devices[0].name)
+        setDeviceError(null)
+      } else {
+        setDeviceError(data.error || 'No Ring devices found')
       }
     } catch (e) {
       console.error(e)

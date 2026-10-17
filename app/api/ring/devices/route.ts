@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAccessToken } from '@/lib/auth'
+import { getAccessToken, getAuthMode } from '@/lib/auth'
 
 const DEVICE_ID = process.env.NEXT_PUBLIC_RING_DEVICE_ID
 const DEVICE_NAME = process.env.NEXT_PUBLIC_RING_DEVICE_NAME || 'Camera'
@@ -10,7 +10,7 @@ export async function GET() {
     const token = await getAccessToken()
 
     // In access token mode, always auto-discover (ignore NEXT_PUBLIC_RING_DEVICE_ID)
-    const isAccessTokenMode = !!process.env.RING_ACCESS_TOKEN
+    const isAccessTokenMode = getAuthMode() === 'access_token'
     const useConfiguredDevice = DEVICE_ID && !isAccessTokenMode
 
     // If device ID is configured (refresh token mode only), use it directly

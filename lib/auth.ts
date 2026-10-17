@@ -6,7 +6,16 @@ export type AuthMode = 'access_token' | 'refresh_token'
 
 let cachedToken: { token: string; expiresAt: number } | null = null
 
+// A Playground token pasted into the dashboard. Kept in server memory only (never written to
+// disk), and it wins over .env.local until the server restarts.
+let runtimeToken: string | null = null
+
+export function setRuntimeToken(token: string) {
+  runtimeToken = token
+}
+
 export function getAuthMode(): AuthMode | null {
+  if (runtimeToken) return 'access_token'
   if (process.env.RING_ACCESS_TOKEN && process.env.RING_REFRESH_TOKEN) {
     return null // conflict
   }
@@ -16,6 +25,8 @@ export function getAuthMode(): AuthMode | null {
 }
 
 export async function getAccessToken(): Promise<string> {
+  if (runtimeToken) return runtimeToken
+
   // Conflict check
   if (process.env.RING_ACCESS_TOKEN && process.env.RING_REFRESH_TOKEN) {
     throw new Error(

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server'
-import { getAuthMode } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthMode, setRuntimeToken } from '@/lib/auth'
 
 export async function GET() {
   const mode = getAuthMode()
@@ -19,4 +19,14 @@ export async function GET() {
   }
 
   return NextResponse.json({ mode })
+}
+
+// The dashboard's "Connect a Ring camera" box: use a pasted Playground token for this server run
+export async function POST(request: NextRequest) {
+  const { token } = await request.json().catch(() => ({}))
+  if (typeof token !== 'string' || !/^eyJ[\w-]+\.[\w-]+\.[\w-]+$/.test(token.trim())) {
+    return NextResponse.json({ error: 'That doesn’t look like a Ring token (it should start with eyJ).' }, { status: 400 })
+  }
+  setRuntimeToken(token.trim())
+  return NextResponse.json({ mode: 'access_token' })
 }
