@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { CareIncident } from '@/lib/types/care'
 import { FallIcon, KettleIcon, VoiceIcon, SignalOffIcon, SproutIcon, CheckIcon, PageIcon, CloseIcon, SmokeIcon, PillIcon, DoorIcon } from './icons'
 
@@ -26,6 +26,9 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
   const [briefFor, setBriefFor] = useState<CareIncident | null>(null)
   const [brief, setBrief] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // The page is prerendered at build time, so clock times are only written once in the browser
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const openBrief = async (incident: CareIncident) => {
     setBriefFor(incident)
@@ -89,7 +92,7 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
                   )}
                 </div>
                 <div className="mt-0.5 text-[12px] text-bark-mute">
-                  {new Date(incident.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ·{' '}
+                  {mounted && new Date(incident.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} ·{' '}
                   {(incident.confidence * 100).toFixed(0)}% sure
                 </div>
                 <p className="mt-2 text-[13.5px] leading-relaxed text-bark-soft">{incident.description}</p>

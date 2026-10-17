@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { ContactSensor, MotionSensor, SmokeCOListener } from '@/lib/types/care'
 import { PillIcon, FridgeIcon, DoorIcon, MotionIcon, SmokeIcon, CheckIcon } from './icons'
 
@@ -13,6 +13,13 @@ interface SensorGridProps {
 }
 
 const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+// The page is prerendered at build time, so clock times are only written once in the browser
+function useMounted() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  return mounted
+}
 
 function ago(ms: number) {
   const min = Math.round((Date.now() - ms) / 60000)
@@ -29,6 +36,7 @@ export function SensorGrid({
   onSimulateContactOpen,
   onSimulateSmokeAlarm,
 }: SensorGridProps) {
+  const mounted = useMounted()
   const alarm = smokeCO.smokeAlarmDetected || smokeCO.coAlarmDetected
 
   return (
@@ -72,7 +80,7 @@ export function SensorGrid({
                   </div>
                   <p className="mt-0.5 text-[13px] text-bark-soft">{sensor.notes || 'Watching the routine'}</p>
                   <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-[12px] text-bark-mute">Last changed {time(sensor.lastChanged)}</span>
+                    <span className="text-[12px] text-bark-mute">Last changed {mounted ? time(sensor.lastChanged) : ''}</span>
                     <button onClick={() => onSimulateContactOpen(sensor.id)} className="btn-ghost !px-3 !py-1 !text-[12px]">
                       Try: {open ? 'close' : 'open'}
                     </button>
