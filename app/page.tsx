@@ -187,12 +187,19 @@ export default function Dashboard() {
     failSafeSentinelProcessor.armDeadMansSwitch(incident)
   }, [])
 
-  const sendFamilyUpdate = (incident: CareIncident, update: 'says_okay' | 'got_up') =>
+  // Each note goes out once per fall: Whisper's overlapping windows can hear "I'm okay" twice
+  // before the paused state reaches the next render
+  const sentUpdates = useRef(new Set<string>())
+  const sendFamilyUpdate = (incident: CareIncident, update: 'says_okay' | 'got_up') => {
+    const key = `${incident.id}:${update}`
+    if (sentUpdates.current.has(key)) return
+    sentUpdates.current.add(key)
     fetch('/api/care/escalation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ incident, level: 2, action: 'FAMILY_UPDATE', update }),
     }).catch(console.error)
+  }
 
   // Stand the alert down because the person answered for themselves, and note it in Growth rings
   const resolveIncident = useCallback((incident: CareIncident, reason: string, note: string) => {
@@ -210,6 +217,7 @@ export default function Dashboard() {
     const esc = escalationRef.current
     if (!incident || !esc.active || esc.paused) return
     if (incident.type === 'fall_detected' && fallDetectionProcessor.onFloor) {
+      if (sentUpdates.current.has(`${incident.id}:says_okay`)) return // already heard it for this fall
       failSafeSentinelProcessor.pauseForOkay(`Heard “${phrase}”`)
       setIncidents((prev) =>
         prev.map((inc) => (inc.id === incident.id ? { ...inc, description: `${inc.description} Said “${phrase}” from the floor.` } : inc))
