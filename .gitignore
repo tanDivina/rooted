@@ -35,3 +35,9 @@ dist/
 
 # Promo video working files (kept locally, not in the repo)
 promo/
+.vercel
+.env*.local
+
+# Backups of env files (they hold secrets)
+.env*.bak
+.env.local.*
