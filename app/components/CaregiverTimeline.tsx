@@ -25,6 +25,7 @@ const CALM = { Icon: SproutIcon, tone: 'text-moss bg-moss-wash' }
 export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelineProps) {
   const [briefFor, setBriefFor] = useState<CareIncident | null>(null)
   const [brief, setBrief] = useState<string | null>(null)
+  const [briefSource, setBriefSource] = useState<'bedrock' | 'template' | null>(null)
   const [loading, setLoading] = useState(false)
   // The page is prerendered at build time, so clock times are only written once in the browser
   const [mounted, setMounted] = useState(false)
@@ -34,6 +35,7 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
     setBriefFor(incident)
     setLoading(true)
     setBrief(null)
+    setBriefSource(null)
     try {
       const res = await fetch('/api/care/summary', {
         method: 'POST',
@@ -42,6 +44,7 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
       })
       const data = await res.json()
       setBrief(data.summary || 'Summary unavailable')
+      setBriefSource(data.source ?? null)
     } catch {
       setBrief(
         `EMERGENCY EMS REPORT\nEvent: ${incident.title}\nSeverity: ${incident.severity.toUpperCase()}\nTime: ${new Date(incident.timestamp).toLocaleString()}\nDetails: ${incident.description}\nConfidence: ${Math.round(incident.confidence * 100)}%`
@@ -147,7 +150,13 @@ export function CaregiverTimeline({ incidents, onAcknowledge }: CaregiverTimelin
             )}
 
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-bark-mute">Ready to send to dispatch by webhook</span>
+              <span className="text-[12px] text-bark-mute">
+                {briefSource === 'bedrock'
+                  ? 'Written by Claude on Amazon Bedrock'
+                  : briefSource === 'template'
+                    ? 'Template: Bedrock is off without AWS keys'
+                    : 'Ready to send to dispatch by webhook'}
+              </span>
               <button onClick={() => setBriefFor(null)} className="btn-ghost">Close</button>
             </div>
           </div>

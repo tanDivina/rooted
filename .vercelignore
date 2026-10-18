@@ -1,0 +1,7 @@
+# Never upload secrets: the public demo runs with no AWS, Ring or ElevenLabs keys, so it sends nothing
+.env
+.env.*
+promo/
+node_modules/
+.next/
+screenshots/
