@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState } from 'react'
-import { FallIcon, SproutIcon, KettleIcon, VoiceIcon, SignalOffIcon, KeyIcon, ArrowOutIcon, CloseIcon } from './icons'
+import { LeafIcon, FallIcon, SproutIcon, KettleIcon, VoiceIcon, SignalOffIcon, KeyIcon, ArrowOutIcon, CloseIcon } from './icons'
 
 interface CareScenarioSelectorProps {
+  onTriggerQuiet: () => void
   onTriggerFall: () => void
   onTriggerFallOkay: () => void
   onTriggerStove: () => void
@@ -15,6 +16,7 @@ interface CareScenarioSelectorProps {
 }
 
 export function CareScenarioSelector({
+  onTriggerQuiet,
   onTriggerFall,
   onTriggerFallOkay,
   onTriggerStove,
@@ -43,6 +45,11 @@ export function CareScenarioSelector({
     <div className="mx-6 mb-3 flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="eyebrow mr-1">Try a moment</span>
+
+        <button onClick={onTriggerQuiet} className={`${chip} border-bark-line bg-parchment-paper text-bark hover:bg-parchment-deep`}>
+          <LeafIcon className="w-4 h-4" />
+          A quiet day
+        </button>
 
         <button onClick={onTriggerFall} className={`${chip} border-ember/30 bg-ember-wash/60 text-ember-deep hover:bg-ember-wash`}>
           <FallIcon className="w-4 h-4" />

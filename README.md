@@ -130,6 +130,7 @@ The dashboard has one-click **Try a moment** buttons, so it works without a live
 
 | Button | What happens |
 | :--- | :--- |
+| **A quiet day** | He reads the paper and drinks his tea. The detectors run (open **Roots** to see pose read “sitting” and the listener on) and nothing needs anyone, which is most days. |
 | **A fall** | Plays a living-room clip through the real pose detector: he collapses getting up from a chair, and after 4 s of stillness the fall alert and check-in countdown start. Watch it climb from step 1 to step 3. |
 | **Stove left on** | Raises a kitchen alert for a burner left on with nobody present. |
 | **A call for help** | Plays an empty living room while someone out of view calls “Help me, please, I fell and I can’t get up!”; the on-device speech listener hears it and raises the alert. |

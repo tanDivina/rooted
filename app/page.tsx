@@ -414,6 +414,22 @@ export default function Dashboard() {
   }
   useEffect(() => clearFallTimer, [])
 
+  // An ordinary afternoon: he reads the paper and drinks his tea, the detectors watch, and nothing
+  // needs anyone. Loops until another moment starts.
+  const triggerQuietScenario = () => {
+    clearFallTimer()
+    setActiveVideoSrc('/videos/quiet-day.mp4')
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+      videoRef.current.src = '/videos/quiet-day.mp4'
+      videoRef.current.loop = true
+      videoRef.current.play().catch(console.error)
+      voiceDistressProcessor.listenTo(videoRef.current) // inside the click, so audio may start
+    }
+    stoveHazardProcessor.reset() // living room footage: no stove zone in view
+    fallDetectionProcessor.reset()
+  }
+
   const triggerFallScenario = () => {
     clearFallTimer()
     setActiveVideoSrc('/videos/fall-living-room.mp4')
@@ -607,6 +623,7 @@ export default function Dashboard() {
       />
 
       <CareScenarioSelector
+        onTriggerQuiet={triggerQuietScenario}
         onTriggerFall={triggerFallScenario}
         onTriggerFallOkay={triggerFallOkayScenario}
         onTriggerStove={triggerStoveScenario}

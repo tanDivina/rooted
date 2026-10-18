@@ -17,7 +17,7 @@ const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'
 
 // Landmark indices (MediaPipe Pose)
-const NOSE = 0, L_SHOULDER = 11, R_SHOULDER = 12, L_HIP = 23, R_HIP = 24, L_ANKLE = 27, R_ANKLE = 28
+const NOSE = 0, L_SHOULDER = 11, R_SHOULDER = 12, L_HIP = 23, R_HIP = 24, L_KNEE = 25, R_KNEE = 26, L_ANKLE = 27, R_ANKLE = 28
 const TRACKED = [0, 11, 12, 23, 24, 25, 26, 27, 28]
 
 // Tuning. Distances are relative to the person's own standing height (nose to ankles),
@@ -33,6 +33,7 @@ const HIPS_STEADY = 0.05      // hips moving less than this (of standing height)
 const ABOVE_SEAT = 0.1         // lying with hips this far above where they last sat: on furniture, not the floor
 const DROP_WINDOW_MS = 3000    // a sudden drop counts if it happened this recently
 const UPRIGHT_BEFORE = 35      // ...and the torso was within this many degrees of upright just before it
+const KNEE_BENT = 145          // hip-knee-ankle angle below this, with an upright torso: sitting (no standing height needed)
 const STILL_MOVEMENT = 0.03    // smoothed mean landmark movement over ~1s below this is "still"
                                // (pose landmarks jitter ~0.005-0.016 even on a frozen frame)
 const FALL_STILL_SEC = 4       // still on the floor this long after a sudden drop: a fall
@@ -233,7 +234,16 @@ export class FallDetectionProcessor implements VideoProcessor {
     // (an upright torso alone is not enough: sitting would shrink it)
     const ankles = mid(L_ANKLE, R_ANKLE)
     const anklesSeen = Math.min(lm[L_ANKLE].visibility ?? 1, lm[R_ANKLE].visibility ?? 1) > 0.5
-    if (torsoAngle < 20 && anklesSeen) {
+    // Knees clearly bent (seen from a high corner, a seated person's legs can still look long)
+    const knee = (h: number, k: number, a: number) => {
+      const v1 = { x: (lm[h].x - lm[k].x) * width, y: (lm[h].y - lm[k].y) * height }
+      const v2 = { x: (lm[a].x - lm[k].x) * width, y: (lm[a].y - lm[k].y) * height }
+      const cos = (v1.x * v2.x + v1.y * v2.y) / (Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y) || 1)
+      return (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI
+    }
+    const kneesSeen = Math.min(lm[L_KNEE].visibility ?? 1, lm[R_KNEE].visibility ?? 1) > 0.5 && anklesSeen
+    const kneesBent = kneesSeen && (knee(L_HIP, L_KNEE, L_ANKLE) + knee(R_HIP, R_KNEE, R_ANKLE)) / 2 < KNEE_BENT
+    if (torsoAngle < 20 && anklesSeen && !kneesBent) {
       const h = ankles.y - lm[NOSE].y
       // ...and hips not on their way down (lowering into a chair looks upright with straight-ish legs)
       const halfSecAgo = ago(500)
@@ -322,7 +332,8 @@ export class FallDetectionProcessor implements VideoProcessor {
       if (this.posture === 'fall_detected' && torsoAngle > 35) {
         // Partly up but not upright yet: keep the alert state until they are clearly up
       } else {
-        const seated = H != null && gap < SEATED_GAP * H && torsoAngle < 40
+        // Sitting: hips low relative to their standing height, or knees clearly bent under an upright torso
+        const seated = torsoAngle < 40 && ((H != null && gap < SEATED_GAP * H) || kneesBent)
         if (this.fallTriggered && seated) {
           // Sitting up after a fall, likely still on the floor: not recovered until on their feet
           this.posture = 'sitting'
