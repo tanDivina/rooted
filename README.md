@@ -10,9 +10,13 @@
 ![Ring Partner API](https://img.shields.io/badge/Ring%20API-AVA%20v1-5C6B37)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-![Rooted dashboard](docs/screenshots/dashboard.png)
+![A fall, Rooted's check-in, “I’m okay” from the floor, and back up](docs/rooted-demo.webp)
 
-**Demo video (under 3 min):** see the Devpost submission · **Try it:** `npm install && npm run dev`, then press **A fall**.
+> **For judges, in one minute**
+> - **Try it live:** [rooted-eight-ecru.vercel.app](https://rooted-eight-ecru.vercel.app). Press **A fall**, then **A fall, then “I’m okay”**. The detectors run in your browser on demo footage; the public version sends no emails.
+> - **Watch it:** the demo video (under 3 minutes) is on the Devpost submission.
+> - **What’s real:** pose fall detection, the “I’m okay” and call-for-help listener (Whisper), the check-in and escalation, the Bedrock-written brief and the SES email, and the Ring Partner API discovery and live view, tested on the Ring Playground. Simulated: the stove, sensors, chime and 911. [The full table](#whats-real-and-whats-simulated).
+> - **Private by design:** video and audio never leave the device. [How](#dignity-and-privacy).
 
 ---
 
@@ -66,27 +70,47 @@ The **“A fall, then ‘I’m okay’”** moment runs all three on real detect
 
 **Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener would add context: the medicine cabinet opened, a trip to the fridge, the front door at night. In the demo they’re simulated, and so is the Pan-Tilt Indoor Cam turning toward an alert, because pan-tilt isn’t in the public API.
 
-| A fall, and the check-in | Growth rings | Why stay rooted |
+| A quiet day, detectors live | A fall: the check-in | “I’m okay”, still on the floor |
 | :---: | :---: | :---: |
-| ![Fall alert](docs/screenshots/fall-alert.png) | ![Growth rings](docs/screenshots/growth-rings.png) | ![Why stay rooted](docs/screenshots/why.png) |
+| ![A quiet day with the Roots panel](docs/screenshots/dashboard.png) | ![Fall alert](docs/screenshots/fall-alert.png) | ![They answered, still on the floor](docs/screenshots/answered.png) |
+| **The paramedic brief** | **Why stay rooted** | |
+| ![Paramedic brief in Growth rings](docs/screenshots/growth-rings.png) | ![Why stay rooted](docs/screenshots/why.png) | |
 
 ---
 
-## Architecture
+## How a fall moves through Rooted
 
+```mermaid
+flowchart TD
+    cam["Ring camera<br/>live view over WebRTC (WHEP)"] --> roots
+    subgraph browser["In the browser: nothing leaves the device"]
+        roots["Roots<br/>MediaPipe Pose · Whisper"]
+    end
+    roots -- "a fall: sudden drop from upright,<br/>then 4 s still on the floor" --> checkin["Check-in, 45 s<br/>chime at home"]
+    checkin -- "“I’m okay”, but still on the floor" --> wait["Wait 2 min<br/>gentle note to the family"]
+    wait -- "still down" --> family
+    checkin -- "they get up" --> up["Stand down<br/>“back up” note"]
+    wait -- "they get up" --> up
+    checkin -- "someone checked:<br/>2.5 s hold on the dashboard" --> clear["All clear<br/>kept in Growth rings"]
+    checkin -- "no answer" --> family["Step 2: family<br/>Claude on Bedrock writes it, SES emails it"]
+    family -- "no answer" --> ems["Step 3: emergency services<br/>paramedic brief (always simulated)"]
 ```
-Ring camera (AVA: WebRTC stream, status, events)
-        │
-        ▼
-Roots: in-browser vision & audio (MediaPipe Pose fall, stove zone, Whisper listener)
-        │  incident
-        ▼
-Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
-        │  no answer
-        ├─► Step 1: in-home chime
-        ├─► Step 2: caregiver email (Bedrock + SES), text (SNS)
-        └─► Step 3: emergency dispatch + paramedic brief (simulated)
-```
+
+The incident record (what was detected, where, when, how sure) is the only thing that leaves the browser, and only at the family step.
+
+---
+
+## Dignity and privacy
+
+A camera watching someone’s parent has to earn its place in the home. What Rooted does today, as built:
+
+- **Video and audio stay on the device.** The Ring live view goes straight to the browser over WebRTC, and MediaPipe Pose and Whisper run there. Rooted records nothing, saves no frames, and keeps nothing in browser storage.
+- **Only an incident record goes further.** At the family step, the server gets what was detected, where, when and how sure the detector was. Claude on Bedrock writes the email from that record alone and is told never to add symptoms or anything the camera couldn’t see. Every brief ends by noting that it comes from an automated camera detector.
+- **A calm room stays clean.** The detector only draws a box on the person when something needs attention, and on most days nothing does.
+- **The person answers for themselves.** Saying “I’m okay” or getting up counts. The family hears from Rooted only after a 45-second check-in goes unanswered, or gets a gentle note if they said “I’m okay” from the floor; emergency services come only after the family step.
+- **The family timeline lives in the open page.** There’s no database; Growth rings is gone when the page closes.
+
+Not built yet, and needed before a real home: the person’s own consent and a way to pause watching, privacy zones (Ring supports them per camera), and controls over which family members can open the live view.
 
 ---
 
@@ -159,6 +183,38 @@ I built Rooted without any Ring hardware. On Oct 17 2026 I ran it against the Ri
 **Next:** vision on the stove zone, smoke-alarm beep detection on the stream’s audio track, Ring sensors over webhooks, a real Ring Chime sound, and a first run on a physical Ring camera.
 
 All the footage is AI-generated with Gemini Omni Flash: the quiet afternoon (started from a still edited with Nano Banana so the newspaper is already in his hands), the fall, the fall answered with “I’m okay” (continued from the fall clip’s last frame), the call for help and the stove left on. The voices are ElevenLabs. The people and voices are generated, not real.
+
+## Add your own root
+
+Each detector is a small plugin that gets every video frame. To add one, for example a root that notices the lights left off at night:
+
+1. Create `lib/video-processors/care/night-light.ts` implementing `VideoProcessor` from `lib/video-processors/types.ts`. Start its `id` with `care-` and it appears under **Roots** with a toggle and its live values.
+
+   ```ts
+   import { VideoProcessor, ProcessorResult } from '../types'
+
+   export class NightLightProcessor implements VideoProcessor {
+     id = 'care-night-light'
+     name = 'Night light'
+     description = 'Notices the room going dark while someone is still up'
+     enabled = true
+     private onIncident?: (incident: any) => void
+     setIncidentCallback(cb: (incident: any) => void) { this.onIncident = cb }
+
+     async process(frame: ImageData): Promise<ProcessorResult | null> {
+       let sum = 0
+       for (let i = 0; i < frame.data.length; i += 16) sum += frame.data[i]
+       const brightness = Math.round(sum / (frame.data.length / 16))
+       // ...call this.onIncident({ id, type, severity, timestamp, title, description, confidence, resolved: false, escalationLevel: 1 })
+       return { id: `night-${Date.now()}`, processorId: this.id, timestamp: Date.now(), data: { brightness } }
+     }
+   }
+   export const nightLightProcessor = new NightLightProcessor()
+   ```
+2. Register it in `lib/video-processors/index.ts` with `processorRegistry.register(nightLightProcessor)`.
+3. To start the check-in, wire its callback in `app/page.tsx` next to the others (`setIncidentCallback(handleNewIncident)`), and add your incident `type` to `CareIncident` in `lib/types/care.ts`.
+
+The same pipeline runs on a video file, so a new root can be tested on a clip before it ever sees a camera, the way every root here was.
 
 ## Built during the hackathon
 

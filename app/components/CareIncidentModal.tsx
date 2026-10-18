@@ -15,8 +15,8 @@ interface CareIncidentModalProps {
 
 const STEPS = [
   { level: 1, Icon: ChimeIcon, title: 'At home', body: 'A gentle chime in the home, and a moment to answer' },
-  { level: 2, Icon: FamilyIcon, title: 'Family', body: 'Email and text to the caregiver, over cellular if needed' },
-  { level: 3, Icon: HelpIcon, title: 'Emergency services', body: 'Dispatch with a clinical brief for paramedics' },
+  { level: 2, Icon: FamilyIcon, title: 'Family', body: 'An email to the caregiver, and a text once SMS is set up' },
+  { level: 3, Icon: HelpIcon, title: 'Emergency services', body: 'Dispatch with a brief for paramedics (simulated here)' },
 ] as const
 
 const HOLD_DURATION_MS = 2500 // 2.5 seconds deliberate hold required to cancel
