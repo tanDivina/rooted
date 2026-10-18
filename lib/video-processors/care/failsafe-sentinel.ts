@@ -144,7 +144,7 @@ export class FailSafeSentinelProcessor implements VideoProcessor {
         this.escalationStatus.levelLabel = 'Level 3: Direct 911 / Paramedic Dispatch'
       } else if (this.escalationStatus.secondsRemaining <= 30) {
         this.escalationStatus.level = 2
-        this.escalationStatus.levelLabel = 'Level 2: Caregiver Cellular Push & SMS Blast'
+        this.escalationStatus.levelLabel = 'Level 2: Family email and text'
       } else {
         this.escalationStatus.level = 1
         this.escalationStatus.levelLabel = 'Level 1: In-Home Chime Check'
