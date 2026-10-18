@@ -32,12 +32,13 @@ const LEGS_STRAIGHT = 0.4      // hips at least this far above the ankles: stand
 const HIPS_STEADY = 0.05      // hips moving less than this (of standing height) over 0.5s: not sitting down or falling
 const ABOVE_SEAT = 0.1         // lying with hips this far above where they last sat: on furniture, not the floor
 const DROP_WINDOW_MS = 3000    // a sudden drop counts if it happened this recently
+const UPRIGHT_BEFORE = 35      // ...and the torso was within this many degrees of upright just before it
 const STILL_MOVEMENT = 0.03    // smoothed mean landmark movement over ~1s below this is "still"
                                // (pose landmarks jitter ~0.005-0.016 even on a frozen frame)
 const FALL_STILL_SEC = 4       // still on the floor this long after a sudden drop: a fall
 const LYING_STILL_SEC = 60     // still on the floor this long without a drop: also worth asking
 
-interface Sample { t: number; hipY: number; pts: { x: number; y: number }[] }
+interface Sample { t: number; hipY: number; torso: number; pts: { x: number; y: number }[] }
 
 /**
  * Fall & Slip Detection Processor for Ring Cameras
@@ -196,7 +197,11 @@ export class FallDetectionProcessor implements VideoProcessor {
         }
         return this.result(now, [], `On the floor · ${lostSec}s`, lostSec)
       }
-      if (!this.downSince) this.posture = 'absent'
+      if (!this.downSince) {
+        this.posture = 'absent'
+        // Whoever is seen next is a new track: don't measure a "drop" against where this one was
+        this.history = []
+      }
       return this.result(now, [], 'Nobody in view', 0)
     }
     this.lastSeenAt = now
@@ -218,7 +223,7 @@ export class FallDetectionProcessor implements VideoProcessor {
     }
 
     // History for drop speed and stillness
-    this.history.push({ t: now, hipY: hips.y, pts: TRACKED.map((i) => ({ x: lm[i].x, y: lm[i].y })) })
+    this.history.push({ t: now, hipY: hips.y, torso: torsoAngle, pts: TRACKED.map((i) => ({ x: lm[i].x, y: lm[i].y })) })
     this.history = this.history.filter((s) => now - s.t <= 3000)
     const ago = (ms: number) => this.history.find((s) => now - s.t <= ms) ?? this.history[0]
 
@@ -240,7 +245,10 @@ export class FallDetectionProcessor implements VideoProcessor {
 
     const recent = this.history.filter((s) => now - s.t <= DROP_WITHIN_MS)
     const hipDrop = hips.y - Math.min(...recent.map((s) => s.hipY))
-    if (hipDrop > (H ? DROP_FRACTION * H : DROP_FRAME)) this.lastDropAt = now
+    // A fall starts from upright (standing, or sitting up). Without that, a pose the model finds in
+    // something that isn't a person (the Ring Playground's bird feeder did it) can look like a drop.
+    const wasUpright = recent.some((s) => s.torso < UPRIGHT_BEFORE)
+    if (hipDrop > (H ? DROP_FRACTION * H : DROP_FRAME) && wasUpright) this.lastDropAt = now
 
     const movement =
       oneSecAgo.pts.reduce((sum, p, i) => sum + Math.hypot(p.x - lm[TRACKED[i]].x, p.y - lm[TRACKED[i]].y), 0) /
