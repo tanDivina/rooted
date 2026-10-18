@@ -18,7 +18,7 @@
 
 ## Why stay rooted
 
-An old oak has spent decades sending roots into one patch of ground. Move it, and even with the best care it struggles. People are much the same: their neighbours, their routines and their own front door are part of what keeps them well.
+An old oak has spent decades sending roots into one patch of ground. Move it, and even with the best care it struggles. People are much the same. Their neighbours, their routines and their own front door are part of what keeps them well.
 
 | Finding | Source |
 | :--- | :--- |
@@ -29,41 +29,42 @@ An old oak has spent decades sending roots into one patch of ground. Move it, an
 | Living alone was tied to higher mortality only where people felt little connection to their neighbours. | [Jiang et al., Rutgers (PINE study)](https://www.rutgers.edu/news/strong-connection-neighbors-may-improve-health-outcomes) |
 | Relocating older people without preparation carries a higher risk of poor outcomes. | [Holder & Jolley, *Reviews in Clinical Gerontology*, 2012](https://kar.kent.ac.uk/32428/) |
 
-These are observational studies: strong, consistent associations rather than proof of cause. The app’s **Why stay rooted** page (`/why`) tells the same story for families and judges.
+These are observational studies. They show strong, consistent associations, not proof of cause. The app’s **Why stay rooted** page (`/why`) tells the same story for families.
 
-What drives families toward a move is usually fear of the fall nobody sees. [About 1 in 4 adults over 65 falls each year](https://www.cdc.gov/falls/data-research/index.html), and panic pendants tend to stay on the nightstand. Rooted is built to take that fear away.
+What usually forces the move is fear of the fall nobody sees. [About 1 in 4 adults over 65 falls each year](https://www.cdc.gov/falls/data-research/index.html), and the panic pendant stays on the nightstand.
 
 ---
 
 ## What Rooted watches for: the four roots
 
-1. **A fall.** [MediaPipe Pose](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) runs in the browser on every frame of the Ring stream. A fall is the hips dropping sharply (a third of the person’s own standing height within 1.5 s, so it works near or far from the camera), then the torso flat and hips at floor level for 4 seconds of stillness. Lying down slowly counts as resting, and only raises a gentler alert after a minute still on the floor, not on a sofa or bed. A fall has to start from upright: on the Ring Playground’s bird-feeder stream the pose model briefly read a woodpecker as a person on the floor (no alert fired), so a drop now only counts if the torso was upright just before it. A non-human shape can still read as “lying down”, which would only alert after a minute without movement.
-   *Tested on the [UR Fall Detection Dataset](http://fenix.ur.edu.pl/~mkepski/ds/uf.html) (front camera, color only): 5–6 of 8 fall runs detected depending on the run, 0 alerts across 9 everyday clips (sitting, bending, lying down on purpose), measured on Oct 13 2026, before the “upright first” and bent-knee sitting rules were added. Falls straight toward the camera are missed, because the body looks upright when foreshortened. Also tested on 6 generated wide-angle living-room clips: 3 of 3 falls (tripping on a rug, collapsing beside a chair, sliding down a wall) and 0 of 3 everyday moments (sitting on a sofa, lying down on it to read, picking something up), re-run on Oct 18 2026 with the current rules. A small sample, not a clinical validation. The “Try a moment” fall plays one of those generated clips through the same detector, so the alert you see is real detection (a scripted alert stands in only if the pose model can’t load, for example offline).*
-2. **A stove left on.** A burner on in the kitchen while nobody is there (scripted in the demo today; vision on the stove zone is in progress).
-3. **A call for help.** [Whisper](https://huggingface.co/onnx-community/whisper-tiny) runs on-device in a Web Worker (transformers.js) on the camera’s audio track, listening for “Help!”, “I fell” or “I can’t get up”. No audio leaves the browser. Each 3-second window takes a few seconds to transcribe on a laptop CPU, so the alert follows the call by several seconds. English is tested; set `NEXT_PUBLIC_LISTEN_LANGUAGE=es` for a Spanish-speaking home (untested).
-4. **A quiet camera.** A missed heartbeat (Wi-Fi or power down) moves alerts onto a cellular backup.
+1. **A fall.** [MediaPipe Pose](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) runs in the browser on every frame of the Ring stream. A fall is the hips dropping a third of the person’s own standing height within 1.5 s from upright, then the torso flat and hips at floor level for 4 seconds of stillness. Measuring against their own height means it works near or far from the camera. Lying down slowly counts as resting, and only raises a gentler alert after a minute still on the floor, not on a sofa or bed. Bent knees under an upright back count as sitting, because a high corner camera makes a seated person’s legs look long.
+   The “upright first” rule came from the Ring Playground: its sample stream is a bird feeder, and the pose model briefly read a woodpecker as a person on the floor. No alert fired, but now a drop only counts if the torso was upright just before it. A non-human shape can still read as “lying down”, which would only alert after a minute without movement.
+   *Tested on the [UR Fall Detection Dataset](http://fenix.ur.edu.pl/~mkepski/ds/uf.html) (front camera, color only): 5–6 of 8 fall runs detected depending on the run, 0 alerts across 9 everyday clips (sitting, bending, lying down on purpose). That was measured on Oct 13 2026, before the “upright first” and bent-knee sitting rules. Falls straight toward the camera are missed, because the body looks upright when foreshortened. On 6 generated wide-angle living-room clips: 3 of 3 falls (tripping on a rug, collapsing beside a chair, sliding down a wall) and 0 of 3 everyday moments (sitting on a sofa, lying down on it to read, picking something up), re-run on Oct 18 2026 with the current rules. A small sample, not a clinical validation. The “Try a moment” fall plays one of those generated clips through the same detector, so the alert you see is a real detection. A scripted alert stands in only if the pose model can’t load, for example offline.*
+2. **A stove left on.** A burner on in the kitchen while nobody is there. Scripted in the demo today; vision on the stove zone is in progress.
+3. **A call for help.** [Whisper](https://huggingface.co/onnx-community/whisper-tiny) runs on the device in a Web Worker (transformers.js) on the camera’s audio track, listening for “Help!”, “I fell” or “I can’t get up”. No audio leaves the browser. Each 3-second window takes a few seconds to transcribe on a laptop CPU, so the alert follows the call by several seconds. English is tested; set `NEXT_PUBLIC_LISTEN_LANGUAGE=es` for a Spanish-speaking home (untested).
+4. **A quiet camera.** A missed heartbeat (Wi-Fi or power down) moves alerts onto a cellular backup. Simulated today: neither is in the Ring API.
 
 ## How it reaches out: three steps
 
-When something is wrong, a 45-second check-in countdown starts. One “I’m okay” ends it; silence moves it outward:
+When something is wrong, a 45-second check-in starts, and the person can answer it (see below). If nobody answers, Rooted reaches further out:
 
-1. **At home.** A chime in the home (the Ring API can play a sound on a Ring Chime; it has no talk-back, so there is no voice check).
-2. **Family.** An email and a text to the caregiver, over cellular if needed.
-3. **Emergency services.** Dispatch, with a structured paramedic brief.
+1. **At home.** A chime in the home. The Ring API has no talk-back, so there is no spoken check; Ring Chime playback is the closest option (simulated in the demo).
+2. **Family.** An email to the caregiver, written by Claude on Amazon Bedrock (tested). A text message is built but hasn’t reached a test phone yet.
+3. **Emergency services.** Dispatch with a paramedic brief. Always simulated here.
 
-Every moment is kept in **Growth rings**, the caregiver’s timeline.
+Every moment is kept in **Growth rings**, the family’s timeline.
 
-**Who answers the check-in?** Not a button: someone on the floor can’t reach a screen. They answer the room:
+**Who answers the check-in?** Someone on the floor can’t reach a screen, so they answer the room:
 
-- **Say “I’m okay.”** Whisper is already listening on the camera’s audio, so a spoken “I’m okay” (or “I’m fine”, “estoy bien”) is heard on the device. If they’re still on the floor, Rooted doesn’t take their word for it and stand down: people often say they’re fine when they aren’t. It *waits* (two minutes), sends the family a gentle “they fell and say they’re okay” note, and reaches out again if they stay down.
-- **Get up.** The pose detector watches for them back on their feet. Seen standing again after a fall, the alert stands down by itself and the family gets a short “back up” note.
-- **Someone who checked.** The dashboard’s hold button is for whoever actually checked on them: family on the phone, or a neighbour who looked in.
+- **Say “I’m okay.”** Whisper is already listening on the camera’s audio, so it hears “I’m okay” (or “I’m fine”, “estoy bien”) on the device. If they’re still on the floor, Rooted doesn’t take their word for it, because people often say they’re fine when they aren’t. It waits two minutes, sends the family a gentle “they fell and say they’re okay” note, and reaches out again if they stay down.
+- **Get up.** When the pose detector sees them back on their feet after a fall, the alert stands down by itself and the family gets a short “back up” note.
+- **Someone who checked.** The dashboard’s hold button is for whoever checked on them: family on the phone, or a neighbour who looked in.
 
-The **“A fall, then ‘I’m okay’”** moment shows all of it on real detection: a fall, “I’m okay” heard from the floor, then the pose detector seeing him stand.
+The **“A fall, then ‘I’m okay’”** moment runs all three on real detection: a fall, “I’m okay” from the floor, then the pose detector seeing him stand.
 
-**Hard to cancel by accident, easy to cancel on purpose.** The dashboard’s “I checked, they’re okay” is a 2.5-second hold, so a stray tap can’t dismiss a real fall. “Send help now” gives a 15-second grace window in case it was pressed by mistake, and every cancel is followed by a 60-second quiet check.
+**Hard to cancel by accident, easy to cancel on purpose.** “I checked, they’re okay” is a 2.5-second hold, so a stray tap can’t dismiss a real fall. “Send help now” gives 15 seconds to undo a mistaken press, and every cancel is followed by a 60-second quiet check.
 
-**Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener add context (medicine cabinet opened, a trip to the fridge, the front door at night), and a Ring Pan-Tilt Indoor Cam can turn toward whatever needs a look.
+**Daily rhythms.** Ring Alarm contact and motion sensors and the smoke/CO listener would add context: the medicine cabinet opened, a trip to the fridge, the front door at night. In the demo they’re simulated, and so is the Pan-Tilt Indoor Cam turning toward an alert, because pan-tilt isn’t in the public API.
 
 | A fall, and the check-in | Growth rings | Why stay rooted |
 | :---: | :---: | :---: |
@@ -83,8 +84,8 @@ Roots: in-browser vision & audio (MediaPipe Pose fall, stove zone, Whisper liste
 Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
         │  no answer
         ├─► Step 1: in-home chime
-        ├─► Step 2: caregiver email + text
-        └─► Step 3: emergency dispatch + paramedic brief
+        ├─► Step 2: caregiver email (Bedrock + SES), text (SNS)
+        └─► Step 3: emergency dispatch + paramedic brief (simulated)
 ```
 
 ---
@@ -95,102 +96,103 @@ Check-in countdown (1 s ticks, heartbeat watch, cellular fallback)
 - Node.js 18+
 - npm or pnpm
 
-### 1. Installation
+### 1. Install
 ```bash
 git clone https://github.com/tanDivina/rooted.git
 cd rooted
 npm install
 ```
 
-### 2. Configure Your Ring Token (Optional / Supported in UI)
-You can link your Ring Playground access token in `.env.local` or directly inside the dashboard UI:
+### 2. Add a Ring token (optional)
+The **Try a moment** buttons work without one. To stream a camera, generate a token in the [Ring Playground](https://developer.amazon.com/ring/console/playground) (it lasts 30 minutes) and either paste it into **Connect a Ring camera** in the dashboard, or put it in `.env.local`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local`:
 ```env
-# Paste token from https://developer.amazon.com/ring/console/playground
 RING_ACCESS_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### 3. Run the Development Server
+A token pasted in the dashboard stays in the server’s memory for that run and is never written to disk.
+
+### 3. Run
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to open Rooted.
+Then open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## Demo guide
 
-The dashboard has one-click **Try a moment** buttons, so it works without a live camera:
+The dashboard’s **Try a moment** buttons play generated clips through the real detectors, so it works without a camera:
 
 | Button | What happens |
 | :--- | :--- |
-| **A quiet day** | He reads the paper and drinks his tea. The detectors run (open **Roots** to see pose read “sitting” and the listener on) and nothing needs anyone, which is most days. |
-| **A fall** | Plays a living-room clip through the real pose detector: he collapses getting up from a chair, and after 4 s of stillness the fall alert and check-in countdown start. Watch it climb from step 1 to step 3. |
-| **Stove left on** | Raises a kitchen alert for a burner left on with nobody present. |
-| **A call for help** | Plays an empty living room while someone out of view calls “Help me, please, I fell and I can’t get up!”; the on-device speech listener hears it and raises the alert. |
-| **Wi-Fi goes down** | Cuts the camera’s heartbeat; Rooted switches to the cellular backup. Click again to restore. |
-| **Connect a Ring camera** | Paste a Ring Playground token and press **Start live view**: Rooted finds the device through the Ring API and streams it over WebRTC (WHEP). Tested against the Playground’s sample device. |
+| **A quiet day** | He reads the paper. The detectors run (open **Roots** to see pose read “sitting” and the listener on) and nothing needs anyone, which is most days. |
+| **A fall** | He collapses getting up from a chair; after 4 s of stillness the pose detector raises the alert and the check-in starts. Watch it climb from step 1 to step 3. |
+| **A fall, then “I’m okay”** | The same fall, but he says “I’m okay” from the floor. Rooted waits instead of escalating, then stands down when he gets up with the chair. |
+| **Stove left on** | A kitchen alert for a burner left on with nobody there (scripted). |
+| **A call for help** | An empty living room while someone out of view calls “Help me, please, I fell and I can’t get up!”; Whisper hears it and raises the alert. |
+| **Wi-Fi goes down** | Cuts the camera’s heartbeat, and Rooted switches to the cellular backup (simulated). Click again to restore. |
+| **Connect a Ring camera** | Paste a Ring Playground token and press **Start live view**: Rooted finds the device through the Ring API and streams it over WebRTC (WHEP). Tested on the Playground’s sample device. |
 
 ---
 
 ## What’s real and what’s simulated
 
-We built Rooted without any Ring hardware. On Oct 17 2026 we ran it against the Ring Playground, whose sample device streams a real clip over the Ring API, so discovery and live video are tested; nothing has run on a physical camera yet. The table says exactly where each piece stands.
+I built Rooted without any Ring hardware. On Oct 17 2026 I ran it against the Ring Playground, whose sample device streams a real clip over the Ring API, so discovery and live video are tested. Nothing has run on a physical camera yet.
 
 | Real and tested | Built against the Ring API, not yet tested | Simulated for the demo |
 | :--- | :--- | :--- |
-| Ring device discovery (`/v1/devices`) and live video over WebRTC (WHEP), with a Playground token against the Playground’s sample device | The detectors on a live Ring stream with a person in view (the sample clip is a bird feeder), and on a physical camera | Stove detection (scripted trigger) |
+| Ring device discovery (`/v1/devices`) and live video over WebRTC (WHEP), with a Playground token on the Playground’s sample device | The detectors on a live Ring stream with a person in view (the sample clip is a bird feeder), and on a physical camera | Stove detection (scripted trigger) |
 | MediaPipe Pose fall detector (tested on the UR Fall dataset and generated living-room clips; the “A fall” moment runs it live) | Device status (`/v1/devices/{id}/status`) as the heartbeat: the Playground device reports offline even while it streams | Contact, motion and smoke/CO sensor events |
-| Call-for-help listener: Whisper on-device on the audio track (English tested on a generated clip; the “A call for help” moment runs it live) | | The camera heartbeat, cellular backup, battery and Wi-Fi health (not in the API) |
+| Call-for-help listener: Whisper on the device, on the audio track (English tested on a generated clip; the “A call for help” moment runs it live) | | The camera heartbeat, cellular backup, battery and Wi-Fi health (not in the API) |
 | Answering the check-in: a spoken “I’m okay” (Whisper) pauses escalation while they’re still down; getting back up (pose) stands it down (tested on a generated clip) | | |
 | Check-in countdown and three-step escalation | | |
-| Family email (Amazon SES) at step 2 | The OAuth refresh-token flow; the family text (Amazon SNS), which sends but hasn’t reached our test phone yet | In-home Ring Chime |
+| Family email (Amazon SES) at step 2 | The OAuth refresh-token flow; the family text (Amazon SNS), which sends but hasn’t reached my test phone yet | In-home Ring Chime |
 | Paramedic brief and family message written by Claude on Amazon Bedrock (template fallback offline) | Signed webhooks streamed to the dashboard over SSE | Pan-Tilt motor control (not in the public API) |
 | | | The 911 dispatch, always: a hackathon app should never call emergency services on its own |
 
 **Next:** vision on the stove zone, smoke-alarm beep detection on the stream’s audio track, Ring sensors over webhooks, a real Ring Chime sound, and a first run on a physical Ring camera.
 
-The **Try a moment** buttons play generated footage through the same detectors, so the app works without a camera: AI-generated clips made with Gemini Omni Flash for the fall, the fall answered with “I’m okay” (continued from the fall clip’s last frame, with a generated voice), the call for help (with a generated voice) and the stove left on. The people and voices in them are generated, not real.
+All the footage is AI-generated with Gemini Omni Flash: the quiet afternoon (started from a still edited with Nano Banana so the newspaper is already in his hands), the fall, the fall answered with “I’m okay” (continued from the fall clip’s last frame), the call for help and the stove left on. The voices are ElevenLabs. The people and voices are generated, not real.
 
 ## Built during the hackathon
 
-Rooted started from Amazon’s [Ring API Hello World](https://github.com/AmazonAppDev/ring-api-helloworld) starter (auth, device list, WHEP player, webhook receiver, video-processor framework). Everything else was built for this hackathon: the four care detectors (`lib/video-processors/care/`), the check-in countdown and three-step escalation, the caregiver timeline and paramedic brief, the heartbeat and cellular-fallback model, pan-tilt and sensor fusion, the demo footage generator, the `/why` research page, and the whole Rooted design (palette, type and a custom icon set).
+Rooted started from Amazon’s [Ring API Hello World](https://github.com/AmazonAppDev/ring-api-helloworld) starter (auth, device list, WHEP player, webhook receiver, video-processor framework). Everything else was built for this hackathon: the four care detectors (`lib/video-processors/care/`), the check-in countdown and three-step escalation, the family timeline and paramedic brief, the heartbeat and cellular-fallback model, pan-tilt and sensor fusion, the demo footage, the `/why` research page, and the whole Rooted design (palette, type and a custom icon set).
 
 ---
 
 ## Hackathon tracks
 
 - **Primary track:** Ring (Caretaking & Accessibility).
-- **AWS Builder mini-challenge:** at step 2, Claude on Amazon Bedrock writes the family message and paramedic brief from the incident record, and Amazon SES emails them to the family (the Amazon SNS text is built but hasn’t reached our test phone yet). It runs on Claude Opus 4.5; set `BEDROCK_MODEL` to move to Opus 5.5 once your account has access. A least-privilege IAM user (`scripts/aws/`) is all the server can use.
+- **AWS Builder mini-challenge:** at step 2, Claude on Amazon Bedrock writes the family message and paramedic brief from the incident record, and Amazon SES emails them to the family (the Amazon SNS text is built but hasn’t reached my test phone yet). It runs on Claude Opus 4.5; set `BEDROCK_MODEL` to move to Opus 5.5 once your account has access. A least-privilege IAM user (`scripts/aws/`) is all the server can use.
 - **Open source mini-challenge:** MIT licensed; see [LICENSE](LICENSE).
 
 ---
 
 ## Product feedback: friction log
 
-What worked well, and what slowed us down, building on the Ring Developer Platform. We had no Ring hardware; we tested against the Ring Playground, and items marked *(docs)* come from the API documentation rather than a test.
+What worked and what slowed me down on the Ring Developer Platform. I had no Ring hardware and tested against the Ring Playground; items marked *(docs)* come from the API documentation, not a test.
 
 **Worked well**
-1. **WHEP streaming.** Standard WebRTC egress plays in a browser with no RTSP transcoding, so frames can be read straight into a canvas for on-device analysis. That design made a private, in-browser fall detector possible. Against the Playground device it worked first time with the starter’s player code.
-2. **The Playground’s sample device.** A one-click token and a device that streams a sample clip let us test discovery and live video with no hardware at all.
-3. **The starter template.** The video-processor interface (`init` / `process` / `cleanup`) made it easy to drop in new detectors, and the same pipeline runs on a file as on a stream, which is how we tested without a camera.
+1. **WHEP streaming.** Standard WebRTC plays in a browser with no RTSP transcoding, so frames go straight into a canvas and the fall detector runs privately in the browser. The starter’s player streamed the Playground device on the first try.
+2. **The Playground’s sample device.** A one-click token and a device that streams a sample clip let me test discovery and live video with no hardware at all.
+3. **The starter template.** The video-processor interface (`init` / `process` / `cleanup`) made it easy to drop in new detectors, and the same pipeline runs on a file as on a stream, which is how I tested without a camera.
 
 **Friction**
-1. **We found the Playground device late.** We built most of Rooted believing there was no way to test streaming without a camera, because the getting-started guide lists a Ring device as a requirement. Saying up front that the Playground has a streaming sample device would save new developers that detour.
-2. **A second live view on the same token sent no video.** The first session streamed; later sessions (in Rooted, and in the Playground’s own player) were created (`201`) but no frames arrived. A clear error, or a note on the limit, would help: Rooted now times out after 15 s and says so instead of showing a black “live” view.
-3. **Device status says offline while streaming.** `/v1/devices/{id}/status` reports `online: false` for the Playground device even mid-stream, so status can’t be used as the camera heartbeat there.
-4. **Live streams stop after 30 or 60 seconds *(docs)*.** Battery cameras stream for 30s, wired ones for 60s. A care dashboard has to reconnect in a loop, which means gaps in what the detectors see. A longer session for approved care use cases would help.
-5. **Audio is receive-only *(docs)*.** The stream’s audio track is great for listening for a call for help, but there is no talk-back, so the gentlest step of an escalation (a voice asking “Are you okay?”) isn’t possible through the camera. Ring Chime playback of a stored sound is the closest option.
-6. **No pan-tilt control *(docs)*.** We couldn’t find pan-tilt in the public API, so a care app can’t turn an indoor camera toward the person who needs help.
-7. **Short-lived Playground tokens.** Tokens last 30 minutes, and a care dashboard is meant to stay open all day. A longer-lived development token would help.
-8. **No care-shaped test footage.** The Playground clip is a bird feeder. Care and accessibility apps need a living room, a kitchen and a person who sits, stands and falls, so we generated our own footage for the demo.
-9. **Long-lived event streams and tooling.** Our SSE webhook relay keeps a connection open, so headless test tools that wait for “network idle” never finish. Not a Ring bug, but a short note in the template docs would help.
+1. **I found the Playground device late.** The getting-started guide lists a Ring device as a requirement, so I built most of Rooted believing there was no way to test streaming without one. A line saying the Playground has a streaming sample device would save new developers that detour.
+2. **A second live view on the same token sent no video.** The first session streamed. Later sessions, in Rooted and in the Playground’s own player, came back `201` with no frames. Rooted now times out after 15 s and says so instead of showing a black “live” view; a clear error or a documented limit would help.
+3. **Device status says offline while streaming.** `/v1/devices/{id}/status` reports `online: false` for the Playground device even mid-stream, so status can’t serve as the camera heartbeat there.
+4. **Live streams stop after 30 or 60 seconds *(docs)*.** Battery cameras stream for 30 s, wired ones for 60 s. A care dashboard has to reconnect in a loop, so the detectors miss whatever happens in the gaps. A longer session for approved care use cases would help.
+5. **Audio is receive-only *(docs)*.** The audio track works for hearing a call for help, but there’s no talk-back, so the gentlest step (a voice asking “Are you okay?”) isn’t possible through the camera. Ring Chime playback of a stored sound is the closest option.
+6. **No pan-tilt control *(docs)*.** I couldn’t find pan-tilt in the public API, so a care app can’t turn an indoor camera toward the person who needs help.
+7. **Short-lived Playground tokens.** Tokens last 30 minutes, and a care dashboard stays open all day. A development token that lasts a day would help.
+8. **No care-shaped test footage.** The Playground clip is a bird feeder. Care apps need a living room, a kitchen and a person who sits, stands and falls, so I generated my own.
+9. **Long-lived event streams and tooling.** The SSE webhook relay keeps a connection open, so headless test tools that wait for “network idle” never finish. Not a Ring bug; a note in the template docs would help.
 
 ---
 
