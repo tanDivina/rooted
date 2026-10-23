@@ -14,7 +14,7 @@
 
 > **For judges, in one minute**
 > - **Try it live:** [rooted-eight-ecru.vercel.app](https://rooted-eight-ecru.vercel.app). Press **A fall**, then **A fall, then “I’m okay”**. The detectors run in your browser on demo footage; the public version sends no emails.
-> - **Watch it:** the demo video (under 3 minutes) is on the Devpost submission.
+> - **Watch it:** [the 3-minute demo on YouTube](https://youtu.be/VIc0jQDO2Lg).
 > - **What’s real:** pose fall detection, the “I’m okay” and call-for-help listener (Whisper), the check-in and escalation, the Bedrock-written brief and the SES email, and the Ring Partner API discovery and live view, tested on the Ring Playground. Simulated: the stove, sensors, chime and 911. [The full table](#whats-real-and-whats-simulated).
 > - **Private by design:** video and audio never leave the device. [How](#dignity-and-privacy).
 > - **Where it runs:** on an always-on device in the home (an old laptop, a tablet, a small PC) with the dashboard open. The family doesn’t need it open: alerts reach them by email, and by text once SMS is set up. [Limits](#where-it-runs-and-its-limits).
