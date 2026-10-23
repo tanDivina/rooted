@@ -17,6 +17,7 @@
 > - **Watch it:** the demo video (under 3 minutes) is on the Devpost submission.
 > - **What’s real:** pose fall detection, the “I’m okay” and call-for-help listener (Whisper), the check-in and escalation, the Bedrock-written brief and the SES email, and the Ring Partner API discovery and live view, tested on the Ring Playground. Simulated: the stove, sensors, chime and 911. [The full table](#whats-real-and-whats-simulated).
 > - **Private by design:** video and audio never leave the device. [How](#dignity-and-privacy).
+> - **Where it runs:** on an always-on device in the home (an old laptop, a tablet, a small PC) with the dashboard open. The family doesn’t need it open: alerts reach them by email, and by text once SMS is set up. [Limits](#where-it-runs-and-its-limits).
 
 ---
 
@@ -111,6 +112,21 @@ A camera watching someone’s parent has to earn its place in the home. What Roo
 - **The family timeline lives in the open page.** There’s no database; Growth rings is gone when the page closes.
 
 Not built yet, and needed before a real home: the person’s own consent and a way to pause watching, privacy zones (Ring supports them per camera), and controls over which family members can open the live view.
+
+---
+
+## Where it runs, and its limits
+
+The detectors run in the dashboard’s browser tab, so in a real home that tab stays open on an always-on device in the house: an old laptop, a tablet or a small PC, plugged in and set never to sleep. Video goes from the camera to that device and no further. The family doesn’t keep anything open. They get the alert by email (and by text once SMS is set up), and can open the dashboard from anywhere to look in or to hold the alert after they’ve checked.
+
+What that means today:
+
+- **If the device sleeps, loses Wi-Fi or closes the tab, Rooted stops watching.** The camera heartbeat that should catch this is simulated in the demo.
+- **Ring live views end after 30 s (battery) or 60 s (wired).** The dashboard reconnects in a loop, and whatever happens in a gap can be missed.
+- **The chimes play on the device running the dashboard.** A chime through the home’s Ring Chime is simulated.
+- **No phone app or push notifications yet.** Email is the tested channel.
+
+Next: a small always-on Rooted hub that runs the same detectors without a browser window, Ring Chime playback, and push notifications to the family.
 
 ---
 
